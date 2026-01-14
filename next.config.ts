@@ -19,6 +19,16 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      {
+        // Rewrite para servir el manifest desde la ruta API
+        // Mantiene la URL exacta que Farcaster requiere: /.well-known/farcaster.json
+        source: '/.well-known/farcaster.json',
+        destination: '/.well-known/farcaster',
+      },
+    ]
+  },
 };
 
 export default nextConfig;
