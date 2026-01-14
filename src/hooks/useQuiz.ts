@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { SafeQuestion, QuizState } from '@/types/quiz'
+import { QUIZ_CONFIG, STORAGE_KEYS } from '@/lib/constants'
 
 interface UseQuizOptions {
   questions: SafeQuestion[] // Preguntas sin respuestas correctas
   timePerQuestion?: number // segundos
 }
 
-export function useQuiz({ questions, timePerQuestion = 25 }: UseQuizOptions) {
+export function useQuiz({ questions, timePerQuestion = QUIZ_CONFIG.TIME_PER_QUESTION }: UseQuizOptions) {
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
     answers: {},
@@ -126,9 +127,12 @@ export function useQuiz({ questions, timePerQuestion = 25 }: UseQuizOptions) {
       setQuizState(finalState)
       
       // Guardar respuestas en localStorage para la página de resultados
-      localStorage.setItem(`quiz_answers_${questions[0]?.protocol}`, JSON.stringify(finalState.answers))
-      localStorage.setItem(`quiz_startTime_${questions[0]?.protocol}`, String(finalState.startTime))
-      localStorage.setItem(`quiz_endTime_${questions[0]?.protocol}`, String(Date.now()))
+      const protocolId = questions[0]?.protocol
+      if (protocolId) {
+        localStorage.setItem(STORAGE_KEYS.QUIZ_ANSWERS(protocolId), JSON.stringify(finalState.answers))
+        localStorage.setItem(STORAGE_KEYS.QUIZ_START_TIME(protocolId), String(finalState.startTime))
+        localStorage.setItem(STORAGE_KEYS.QUIZ_END_TIME(protocolId), String(Date.now()))
+      }
     }
   }, [quizState, totalQuestions, timePerQuestion, questions])
 
