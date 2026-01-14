@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
       total: tokenData.total,
       passed,
       secretWord: passed ? protocol.secretWord : null,
-      protocolName: protocol.title || protocol.name
+      protocolName: protocol.title || protocol.name,
+      verificationMethod: tokenData.verificationMethod || null
     })
   } catch (error) {
     console.error('Error getting results:', error)

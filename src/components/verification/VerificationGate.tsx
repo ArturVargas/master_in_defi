@@ -5,7 +5,7 @@
  * Basado en ConnectHub pero adaptado para nuestro caso
  */
 
-import { memo, ReactNode } from 'react'
+import { ReactNode } from 'react'
 import { useVerification } from '@/contexts/VerificationContext'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { SelfWidget } from './SelfWidget'
@@ -25,6 +25,10 @@ function VerificationGateComponent({
 }: VerificationGateProps) {
   const { isVerified, verificationMethod, isLoading } = useVerification()
 
+  // Cuando se verifica, el componente se re-renderiza automáticamente
+  // y muestra el contenido (children) gracias a la condición if (!requireVerification || isVerified)
+  // El contexto se actualiza cuando se dispara el evento 'wallet-verified' desde WalletSignatureButton
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -33,6 +37,7 @@ function VerificationGateComponent({
     )
   }
 
+  // Si está verificado, mostrar el contenido inmediatamente
   if (!requireVerification || isVerified) {
     return <>{children}</>
   }
@@ -106,5 +111,5 @@ function VerificationGateComponent({
   )
 }
 
-// Memoizar componente para evitar re-renders innecesarios
-export const VerificationGate = memo(VerificationGateComponent)
+// No memoizar para permitir re-render cuando el contexto cambia
+export const VerificationGate = VerificationGateComponent

@@ -8,6 +8,7 @@ interface QuizTokenData {
   total: number
   protocolId: string
   expiresAt: number
+  verificationMethod?: 'self' | 'wallet' | null
 }
 
 const quizTokens = new Map<string, QuizTokenData>()

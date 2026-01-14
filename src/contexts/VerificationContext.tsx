@@ -6,7 +6,7 @@
  * Basado en ConnectHub pero adaptado para nuestro caso de uso
  */
 
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react'
 import { useSelf } from './SelfContext'
 import { useConnections } from 'wagmi'
 import { VerificationMethod } from '@/types/verification'
@@ -32,18 +32,55 @@ export function VerificationProvider({ children }: { children: ReactNode }) {
   // En Wagmi v2, useConnections retorna conexiones activas
   const activeConnection = connections[0] // Primera conexión activa
   const address = activeConnection?.accounts?.[0] as `0x${string}` | undefined
-  const isConnected = connections.length > 0 && !!address
   
-  // Verificar si hay wallet signature guardada
-  const walletVerified = address 
-    ? localStorage.getItem(STORAGE_KEYS.WALLET_VERIFIED(address)) === 'true'
-    : false
+  // Estado para wallet verification (solo en cliente)
+  // Inicializar como false para SSR, se actualizará en el cliente
+  const [walletVerified, setWalletVerified] = useState(false)
+
+  // Función para verificar wallet verification desde localStorage
+  const checkWalletVerification = useCallback(() => {
+    if (typeof window !== 'undefined' && address) {
+      try {
+        const verified = localStorage.getItem(STORAGE_KEYS.WALLET_VERIFIED(address)) === 'true'
+        setWalletVerified(verified)
+      } catch {
+        setWalletVerified(false)
+      }
+    } else {
+      setWalletVerified(false)
+    }
+  }, [address])
+
+  // Verificar si hay wallet signature guardada (solo en cliente)
+  // Esto evita problemas de hidratación al no acceder a localStorage durante SSR
+  useEffect(() => {
+    checkWalletVerification()
+  }, [checkWalletVerification])
+
+  // Escuchar evento cuando se verifica wallet para actualizar inmediatamente
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleWalletVerified = () => {
+      // Actualizar inmediatamente cuando se verifica
+      checkWalletVerification()
+    }
+
+    window.addEventListener('wallet-verified', handleWalletVerified)
+    
+    return () => {
+      window.removeEventListener('wallet-verified', handleWalletVerified)
+    }
+  }, [checkWalletVerification])
 
   const isVerified = isSelfVerified || walletVerified
   const verificationMethod: VerificationMethod | null = 
     isSelfVerified ? 'self' : 
     walletVerified ? 'wallet' : 
     null
+
+  // isLoading solo depende de selfLoading, wallet verification se carga en el cliente
+  const isLoading = selfLoading
 
   return (
     <VerificationContext.Provider
@@ -52,7 +89,7 @@ export function VerificationProvider({ children }: { children: ReactNode }) {
         verificationMethod,
         verificationId: verificationData?.verificationId,
         walletAddress: walletVerified ? address : undefined,
-        isLoading: selfLoading,
+        isLoading,
       }}
     >
       {children}

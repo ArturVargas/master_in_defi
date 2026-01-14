@@ -9,7 +9,7 @@ import crypto from 'crypto'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { protocolId, answers, startTime, endTime } = body
+    const { protocolId, answers, startTime, endTime, verificationMethod } = body
 
     // Validar campos requeridos
     const requiredValidation = validateRequired(body, ['protocolId', 'answers'])
@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
       score: correctAnswers,
       total: questions.length,
       protocolId,
-      expiresAt
+      expiresAt,
+      verificationMethod: verificationMethod || null
     })
 
     // Retornar token y score (sin palabra secreta aún)

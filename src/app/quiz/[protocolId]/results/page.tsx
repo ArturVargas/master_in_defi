@@ -4,6 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { QUIZ_CONFIG, ERROR_MESSAGES } from '@/lib/constants'
+import { useVerification } from '@/contexts/VerificationContext'
 
 interface QuizResults {
   score: number
@@ -11,6 +12,7 @@ interface QuizResults {
   passed: boolean
   secretWord: string | null
   protocolName: string
+  verificationMethod?: 'self' | 'wallet' | null
 }
 
 export default function QuizResultsPage() {
@@ -23,6 +25,8 @@ export default function QuizResultsPage() {
   const [results, setResults] = useState<QuizResults | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Usar verificationMethod de los resultados si está disponible, sino del contexto
+  const contextVerification = useVerification()
 
   useEffect(() => {
     const loadResults = async () => {
@@ -53,7 +57,8 @@ export default function QuizResultsPage() {
           total: data.total,
           passed: data.passed,
           secretWord: data.secretWord,
-          protocolName: data.protocolName
+          protocolName: data.protocolName,
+          verificationMethod: data.verificationMethod || null
         })
         setLoading(false)
       } catch (error) {
@@ -96,17 +101,24 @@ export default function QuizResultsPage() {
     )
   }
 
-  const { score, total, passed, secretWord, protocolName } = results
+  const { score, total, passed, secretWord, protocolName, verificationMethod } = results
+  const displayVerificationMethod = verificationMethod || contextVerification.verificationMethod
+  const isVerified = contextVerification.isVerified || !!verificationMethod
 
   return (
     <div className="min-h-screen bg-black p-8 font-sans">
       <main className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mb-4 inline-flex items-center justify-center">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
             <Badge className="rounded-full bg-blue-900/30 px-4 py-1.5 text-sm font-medium text-blue-400 border-blue-800/50">
               DEFI INTELLIGENCE HUB
             </Badge>
+            {isVerified && displayVerificationMethod && (
+              <Badge className="rounded-full bg-green-900/30 px-4 py-1.5 text-sm font-medium text-green-400 border-green-800/50">
+                ✓ {displayVerificationMethod === 'self' ? 'Self Protocol Verified' : 'Wallet Verified'}
+              </Badge>
+            )}
           </div>
           <h1 className="bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-6xl font-bold text-transparent md:text-7xl">
             DeFi Mastery

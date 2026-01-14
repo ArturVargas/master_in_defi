@@ -8,6 +8,7 @@ import { useQuiz } from '@/hooks/useQuiz'
 import { QUIZ_CONFIG, ERROR_MESSAGES } from '@/lib/constants'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
+import { useVerification } from '@/contexts/VerificationContext'
 
 export default function QuizStartPage() {
   const params = useParams()
@@ -19,6 +20,7 @@ export default function QuizStartPage() {
   const [answerFeedback, setAnswerFeedback] = useState<Record<string, AnswerFeedback>>({})
   const [quizStarted, setQuizStarted] = useState(false)
   const { error: apiError, handleError, clearError } = useErrorHandler()
+  const { verificationMethod } = useVerification()
 
   const {
     currentQuestion,
@@ -330,7 +332,8 @@ export default function QuizStartPage() {
                           protocolId,
                           answers: finalAnswers,
                           startTime: quizState.startTime,
-                          endTime: Date.now()
+                          endTime: Date.now(),
+                          verificationMethod: verificationMethod || null
                         })
                       })
                       

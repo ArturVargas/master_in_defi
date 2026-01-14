@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { getProtocolById } from '@/data/protocols'
 import Link from 'next/link'
+import { VerificationGate } from '@/components/verification/VerificationGate'
 
 export default function ProtocolStudyPage() {
   const params = useParams()
@@ -24,15 +25,16 @@ export default function ProtocolStudyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black p-8 font-sans">
-      <main className="mx-auto max-w-4xl">
-        {/* Header */}
-        <h1 className="mb-8 text-center text-6xl font-bold text-zinc-500/50 md:text-7xl">
-          Protocol Study
-        </h1>
+    <VerificationGate requireVerification={true}>
+      <div className="min-h-screen bg-black p-8 font-sans">
+        <main className="mx-auto max-w-4xl">
+          {/* Header */}
+          <h1 className="mb-8 text-center text-6xl font-bold text-zinc-500/50 md:text-7xl">
+            Protocol Study
+          </h1>
 
-        {/* Protocol Documentation Card */}
-        <div className="relative rounded-xl border border-zinc-700/50 bg-zinc-900/50 p-8 shadow-2xl">
+          {/* Protocol Documentation Card */}
+          <div className="relative rounded-xl border border-zinc-700/50 bg-zinc-900/50 p-8 shadow-2xl">
           {/* Card Header */}
           <div className="mb-6 flex items-start justify-between">
             <h2 className="text-2xl font-bold text-white">
@@ -88,5 +90,6 @@ export default function ProtocolStudyPage() {
         </div>
       </main>
     </div>
+    </VerificationGate>
   )
 }

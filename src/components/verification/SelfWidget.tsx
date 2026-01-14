@@ -5,7 +5,7 @@
  * Basado en ConnectHub: https://github.com/ArturVargas/ConnectHub
  */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSelf } from '@/contexts/SelfContext'
 import { useFarcaster } from '@/contexts/FarcasterContext'
 import { useConnections } from 'wagmi'
@@ -47,10 +47,16 @@ export function SelfWidget({
     setShowWidget
   } = useSelf()
 
+  // Callback cuando la verificación es exitosa
+  const handleVerificationSuccess = () => {
+    checkVerificationStatus()
+  }
+
   const [linkCopied, setLinkCopied] = useState(false)
   const [showQR, setShowQR] = useState(showQRCode)
 
   // No mostrar si no hay wallet conectada
+  // Durante SSR, isConnected será false, así que no hay problema de hidratación
   if (!isConnected) {
     return null
   }
@@ -112,60 +118,27 @@ export function SelfWidget({
           Self Protocol Verification
         </h3>
         <p className="text-sm text-zinc-400">
-          Elige tu método de verificación
+          Verifica tu identidad usando Self Protocol. Escanea el QR code con la app Self Protocol en tu móvil.
         </p>
       </div>
 
-      <Tabs defaultValue="backend" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="backend">Backend API</TabsTrigger>
-          <TabsTrigger value="contract">Smart Contract</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="backend" className="space-y-4">
-          <p className="text-sm text-zinc-400">
-            Verifica usando nuestro servicio de API backend
-          </p>
-          <WidgetContent
-            isVerified={isVerified}
-            verificationData={verificationData}
-            isVerifying={isVerifying}
-            error={error}
-            universalLink={universalLink}
-            linkCopied={linkCopied}
-            selfApp={selfApp}
-            showQR={showQR}
-            onVerify={initiateSelfVerification}
-            onCopy={copyToClipboard}
-            onClear={clearVerification}
-            onToggleQR={() => setShowQR(!showQR)}
-            onVerificationSuccess={checkVerificationStatus}
-            isAuthenticated={isAuthenticated}
-          />
-        </TabsContent>
-
-        <TabsContent value="contract" className="space-y-4">
-          <p className="text-sm text-zinc-400">
-            Verifica on-chain usando smart contract en Celo Mainnet
-          </p>
-          <ContractVerificationContent
-            isVerified={isVerified}
-            verificationData={verificationData}
-            isVerifying={isVerifying}
-            error={error}
-            universalLink={universalLink}
-            linkCopied={linkCopied}
-            selfApp={selfApp}
-            showQR={showQR}
-            onVerify={initiateSelfVerification}
-            onCopy={copyToClipboard}
-            onClear={clearVerification}
-            onToggleQR={() => setShowQR(!showQR)}
-            onVerificationSuccess={checkVerificationStatus}
-            isAuthenticated={isAuthenticated}
-          />
-        </TabsContent>
-      </Tabs>
+      {/* Simplificado: Solo método que funciona (Backend API) */}
+      <WidgetContent
+        isVerified={isVerified}
+        verificationData={verificationData}
+        isVerifying={isVerifying}
+        error={error}
+        universalLink={universalLink}
+        linkCopied={linkCopied}
+        selfApp={selfApp}
+        showQR={showQR}
+        onVerify={initiateSelfVerification}
+        onCopy={copyToClipboard}
+        onClear={clearVerification}
+        onToggleQR={() => setShowQR(!showQR)}
+        onVerificationSuccess={handleVerificationSuccess}
+        isAuthenticated={isAuthenticated}
+      />
     </Card>
   )
 }
@@ -326,22 +299,22 @@ function WidgetContent({
       )}
 
       {universalLink && !isVerifying && (
-        <div className="flex gap-2">
-          <Button
-            onClick={onCopy}
-            variant="outline"
-            size="sm"
-            className="flex-1"
-          >
-            {linkCopied ? '¡Copiado!' : 'Copiar Link'}
-          </Button>
+        <div className="space-y-2">
           <Button
             onClick={onToggleQR}
             variant="outline"
             size="sm"
-            className="flex-1"
+            className="w-full"
           >
             {showQR ? 'Ocultar QR' : 'Mostrar QR'}
+          </Button>
+          <Button
+            onClick={onCopy}
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs text-zinc-400 hover:text-zinc-300"
+          >
+            {linkCopied ? '✓ Link copiado' : '📋 Copiar link (para otro dispositivo)'}
           </Button>
         </div>
       )}
