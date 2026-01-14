@@ -6,18 +6,17 @@
 import { createConfig, http } from 'wagmi'
 import { mainnet, celo, base } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
-
-const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
+import { config } from './config'
 
 export const wagmiConfig = createConfig({
   chains: [mainnet, celo, base],
   connectors: [
     injected(),
-    ...(walletConnectProjectId ? [walletConnect({ projectId: walletConnectProjectId })] : [])
+    ...(config.wallet.projectId ? [walletConnect({ projectId: config.wallet.projectId })] : [])
   ],
   transports: {
     [mainnet.id]: http(),
-    [celo.id]: http(process.env.NEXT_PUBLIC_CELO_MAINNET_RPC || 'https://forno.celo.org'),
+    [celo.id]: http(config.self.celoRpcUrl),
     [base.id]: http(),
   },
 })
