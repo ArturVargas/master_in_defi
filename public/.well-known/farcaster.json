@@ -1,11 +1,11 @@
 {
   "frame": {
-    "name": "DeFi Learning Quiz",
-    "iconUrl": "https://yourdomain.com/icon.png",
-    "homeUrl": "https://yourdomain.com",
-    "imageUrl": "https://yourdomain.com/banner.png",
-    "buttonTitle": "Start Learning",
-    "splashImageUrl": "https://yourdomain.com/splash.png",
+    "name": "Master En DeFi",
+    "iconUrl": "https://masterendefi.lat/master_defi_icon.png",
+    "homeUrl": "https://masterendefi.lat/",
+    "imageUrl": "https://masterendefi.lat/master_defi_banner.png",
+    "buttonTitle": "Comenzar a aprender",
+    "splashImageUrl": "https://masterendefi.lat/splash.png",
     "splashBackgroundColor": "#000000"
   }
 }
