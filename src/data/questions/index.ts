@@ -1,8 +1,12 @@
 import { Question } from '@/types/quiz'
 import { aaveQuestions } from './aave'
+import { morphoQuestions } from './morpho'
+import { sablierQuestions } from './sablier'
 
 export const questions: Question[] = [
   ...aaveQuestions,
+  ...morphoQuestions,
+  ...sablierQuestions,
   // Aquí se agregarán más preguntas de otros protocolos
 ]
 

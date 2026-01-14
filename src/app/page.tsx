@@ -1,110 +1,66 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { protocols } from '@/data/protocols'
 import { questions } from '@/data/questions'
+import Link from 'next/link'
 
 export default function Home() {
-  const aaveProtocol = protocols.find(p => p.id === 'aave')
-  const aaveQuestions = questions.filter(q => q.protocol === 'aave')
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 p-8 font-sans dark:bg-black">
-      <main className="flex w-full max-w-4xl flex-col gap-8">
+    <div className="min-h-screen bg-black p-8 font-sans">
+      <main className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-black dark:text-zinc-50">
-            DeFi Learning Quiz
+        <div className="mb-12 text-center">
+          {/* Badge */}
+          <div className="mb-4 inline-flex items-center justify-center">
+            <Badge className="rounded-full bg-blue-900/30 px-4 py-1.5 text-sm font-medium text-blue-400 border-blue-800/50">
+              DEFI INTELLIGENCE HUB
+            </Badge>
+          </div>
+          
+          {/* Title with gradient */}
+          <h1 className="bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-6xl font-bold text-transparent md:text-7xl">
+            DeFi Mastery
           </h1>
-          <p className="mt-2 text-lg text-zinc-600 dark:text-zinc-400">
-            Aprende sobre protocolos DeFi de manera interactiva
-          </p>
         </div>
 
-        {/* Protocol Card */}
-        {aaveProtocol && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{aaveProtocol.title || aaveProtocol.name}</CardTitle>
-                <Badge variant="info">{aaveProtocol.category}</Badge>
-              </div>
-              <CardDescription>{aaveProtocol.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Briefing - Información educativa */}
-                {aaveProtocol.briefing && aaveProtocol.briefing.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">Acerca de {aaveProtocol.name}:</p>
-                    <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                      {aaveProtocol.briefing.slice(0, 2).map((paragraph, idx) => (
-                        <p key={idx} className="leading-relaxed">{paragraph}</p>
-                      ))}
-                    </div>
-                  </div>
-                )}
+        {/* Protocol Cards Grid */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {protocols.map((protocol) => {
+            const protocolQuestions = questions.filter(q => q.protocol === protocol.id)
+            const questionCount = protocolQuestions.length
+            
+            return (
+              <Link
+                key={protocol.id}
+                href={`/quiz/${protocol.id}`}
+                className="group relative flex flex-col rounded-xl bg-zinc-900 p-6 transition-all hover:bg-zinc-800/50 hover:border-2 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] border-2 border-transparent cursor-pointer"
+              >
+                {/* Protocol Title */}
+                <h2 className="mb-3 text-2xl font-bold text-white">
+                  {protocol.title || protocol.name}
+                </h2>
                 
-                <div>
-                  <p className="text-sm font-medium">Características:</p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-600 dark:text-zinc-400">
-                    {aaveProtocol.features.slice(0, 3).map((feature, idx) => (
-                      <li key={idx}>{feature}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="flex gap-2">
-                  <Badge variant="success">APY: {aaveProtocol.apy}%</Badge>
-                  <Badge variant="info">{aaveProtocol.chains.length} cadenas</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Questions Preview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Preguntas Disponibles</CardTitle>
-            <CardDescription>
-              {aaveQuestions.length} preguntas sobre {aaveProtocol?.name}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {aaveQuestions.slice(0, 3).map((question) => (
-                <div key={question.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                  <div className="flex items-start justify-between">
-                    <p className="font-medium">{question.text}</p>
-                    <Badge variant={question.difficulty === 'easy' ? 'success' : question.difficulty === 'medium' ? 'warning' : 'error'}>
-                      {question.difficulty}
-                    </Badge>
+                {/* Description */}
+                <p className="mb-6 flex-1 text-sm leading-relaxed text-white/80">
+                  {protocol.description}
+                </p>
+                
+                {/* Bottom Section */}
+                <div className="mt-auto flex items-end justify-between">
+                  {/* Question Count */}
+                  <span className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                    {questionCount} {questionCount === 1 ? 'QUESTION' : 'QUESTIONS'}
+                  </span>
+                  
+                  {/* Action Button */}
+                  <div
+                    className="bg-blue-500 hover:bg-blue-400 active:bg-blue-600 text-white font-semibold rounded-lg px-4 py-2 text-sm transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
+                  >
+                    Start Quiz
                   </div>
-                  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                    {question.answers.length} opciones
-                  </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex gap-4 justify-center">
-          <Button variant="primary" size="lg">
-            Comenzar Quiz
-          </Button>
-          <Button variant="outline" size="lg">
-            Ver Protocolos
-          </Button>
-        </div>
-
-        {/* Status */}
-        <div className="text-center text-sm text-zinc-500 dark:text-zinc-500">
-          <p>✅ Estructura de carpetas creada</p>
-          <p>✅ Tipos TypeScript definidos</p>
-          <p>✅ Componentes UI base funcionando</p>
-          <p>✅ Datos básicos de DeFi cargados</p>
+              </Link>
+            )
+          })}
         </div>
       </main>
     </div>
