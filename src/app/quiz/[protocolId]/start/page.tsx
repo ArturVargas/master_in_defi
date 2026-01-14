@@ -1,9 +1,9 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { getProtocolById } from '@/data/protocols'
-import { getQuestionsByProtocol } from '@/data/questions'
+import { SafeQuestion, AnswerFeedback } from '@/types/quiz'
 import { useQuiz } from '@/hooks/useQuiz'
 
 export default function QuizStartPage() {
@@ -11,10 +11,14 @@ export default function QuizStartPage() {
   const router = useRouter()
   const protocolId = params.protocolId as string
   const protocol = getProtocolById(protocolId)
-  const questions = getQuestionsByProtocol(protocolId)
+  const [questions, setQuestions] = useState<SafeQuestion[]>([])
+  const [loading, setLoading] = useState(true)
+  const [answerFeedback, setAnswerFeedback] = useState<Record<string, AnswerFeedback>>({})
+  const [quizStarted, setQuizStarted] = useState(false)
 
   const {
     currentQuestion,
+    quizState,
     timeRemaining,
     selectedAnswerId,
     isAnswerLocked,
@@ -26,17 +30,38 @@ export default function QuizStartPage() {
     selectAnswer,
     lockAnswer,
     nextQuestion,
-    startQuiz,
-    getSelectedAnswer,
-    getCorrectAnswer
+    startQuiz
   } = useQuiz({ questions, timePerQuestion: 25 })
 
-  // Iniciar quiz al cargar
+  // Cargar preguntas desde API (sin respuestas correctas)
   useEffect(() => {
-    if (questions.length > 0) {
-      startQuiz()
+    const loadQuestions = async () => {
+      try {
+        const response = await fetch(`/api/quiz/questions?protocolId=${protocolId}`)
+        if (!response.ok) {
+          throw new Error('Failed to load questions')
+        }
+        const data = await response.json()
+        setQuestions(data.questions)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error loading questions:', error)
+        setLoading(false)
+      }
     }
-  }, [questions.length, startQuiz])
+
+    if (protocolId) {
+      loadQuestions()
+    }
+  }, [protocolId])
+
+  // Iniciar quiz cuando se cargan las preguntas (solo una vez)
+  useEffect(() => {
+    if (questions.length > 0 && !quizStarted && quizStatus === 'idle') {
+      startQuiz()
+      setQuizStarted(true)
+    }
+  }, [questions.length, quizStarted, quizStatus, startQuiz])
 
   if (!protocol) {
     return (
@@ -50,6 +75,14 @@ export default function QuizStartPage() {
             Go back to home
           </button>
         </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">Loading quiz...</div>
       </div>
     )
   }
@@ -106,10 +139,39 @@ export default function QuizStartPage() {
     return null
   }
 
-  const selectedAnswer = getSelectedAnswer()
-  const correctAnswer = getCorrectAnswer()
-  const isCorrect = selectedAnswer?.isCorrect ?? false
+  const feedback = answerFeedback[currentQuestion.id]
+  const isCorrect = feedback?.isCorrect ?? false
   const answerLetters = ['A', 'B', 'C', 'D']
+  
+  // Obtener feedback cuando se bloquea la respuesta
+  const handleLockAnswer = async (answerId: string) => {
+    if (!currentQuestion || isAnswerLocked) return
+    
+    lockAnswer(answerId)
+    
+    // Obtener feedback del servidor
+    try {
+      const response = await fetch('/api/quiz/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          protocolId,
+          questionId: currentQuestion.id,
+          answerId
+        })
+      })
+      
+      if (response.ok) {
+        const feedbackData = await response.json()
+        setAnswerFeedback(prev => ({
+          ...prev,
+          [currentQuestion.id]: feedbackData
+        }))
+      }
+    } catch (error) {
+      console.error('Error getting feedback:', error)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-black p-8 font-sans">
@@ -158,8 +220,8 @@ export default function QuizStartPage() {
             {currentQuestion.answers.map((answer, index) => {
               const letter = answerLetters[index]
               const isSelected = selectedAnswerId === answer.id
-              const isCorrectAnswer = answer.isCorrect
-              const showFeedback = isAnswerLocked
+              const showFeedback = isAnswerLocked && feedback
+              const isCorrectAnswer = feedback?.correctAnswer?.id === answer.id
 
               // Determinar estilo según estado
               let answerStyle = 'bg-zinc-800 border-zinc-700 text-white'
@@ -222,7 +284,7 @@ export default function QuizStartPage() {
               <button
                 onClick={() => {
                   if (selectedAnswerId) {
-                    lockAnswer(selectedAnswerId)
+                    handleLockAnswer(selectedAnswerId)
                   }
                 }}
                 disabled={!selectedAnswerId}
@@ -236,7 +298,42 @@ export default function QuizStartPage() {
               </button>
             ) : (
               <button
-                onClick={nextQuestion}
+                onClick={async () => {
+                  if (currentQuestionNumber < totalQuestions) {
+                    nextQuestion()
+                  } else {
+                    // Enviar respuestas al servidor y obtener token
+                    try {
+                      const finalAnswers = {
+                        ...quizState.answers,
+                        [currentQuestion.id]: selectedAnswerId
+                      }
+                      
+                      const response = await fetch('/api/quiz/submit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          protocolId,
+                          answers: finalAnswers,
+                          startTime: quizState.startTime,
+                          endTime: Date.now()
+                        })
+                      })
+                      
+                      if (response.ok) {
+                        const data = await response.json()
+                        // Redirigir a resultados con token
+                        router.push(`/quiz/${protocolId}/results?token=${data.token}`)
+                      } else {
+                        console.error('Error submitting quiz')
+                        router.push(`/quiz/${protocolId}/results`)
+                      }
+                    } catch (error) {
+                      console.error('Error submitting quiz:', error)
+                      router.push(`/quiz/${protocolId}/results`)
+                    }
+                  }
+                }}
                 className="rounded-lg bg-zinc-700 hover:bg-zinc-600 px-6 py-3 font-semibold text-white transition-all"
               >
                 {currentQuestionNumber < totalQuestions ? 'Next Question' : 'View Results'}
@@ -245,15 +342,15 @@ export default function QuizStartPage() {
           </div>
 
           {/* Feedback (si está bloqueado) */}
-          {isAnswerLocked && selectedAnswer && (
+          {isAnswerLocked && feedback && (
             <div className="mt-6 rounded-lg border p-4">
               {isCorrect ? (
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 text-green-500">✓</div>
                   <div>
                     <p className="font-semibold text-green-400">Correct!</p>
-                    {selectedAnswer.explanation && (
-                      <p className="mt-1 text-sm text-zinc-300">{selectedAnswer.explanation}</p>
+                    {feedback.explanation && (
+                      <p className="mt-1 text-sm text-zinc-300">{feedback.explanation}</p>
                     )}
                   </div>
                 </div>
@@ -262,12 +359,12 @@ export default function QuizStartPage() {
                   <div className="mt-0.5 text-red-500">✗</div>
                   <div>
                     <p className="font-semibold text-red-400">Incorrect</p>
-                    {selectedAnswer.explanation && (
-                      <p className="mt-1 text-sm text-zinc-300">{selectedAnswer.explanation}</p>
+                    {feedback.explanation && (
+                      <p className="mt-1 text-sm text-zinc-300">{feedback.explanation}</p>
                     )}
-                    {correctAnswer && (
+                    {feedback.correctAnswer && (
                       <p className="mt-2 text-sm text-green-400">
-                        Correct answer: {correctAnswer.text}
+                        Correct answer: {feedback.correctAnswer.text}
                       </p>
                     )}
                   </div>

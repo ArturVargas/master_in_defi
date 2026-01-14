@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Question, QuizState } from '@/types/quiz'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { SafeQuestion, QuizState } from '@/types/quiz'
 
 interface UseQuizOptions {
-  questions: Question[]
+  questions: SafeQuestion[] // Preguntas sin respuestas correctas
   timePerQuestion?: number // segundos
 }
 
@@ -27,26 +27,38 @@ export function useQuiz({ questions, timePerQuestion = 25 }: UseQuizOptions) {
   const currentQuestion = questions[quizState.currentQuestionIndex]
   const totalQuestions = questions.length
   const progress = ((quizState.currentQuestionIndex + 1) / totalQuestions) * 100
+  const currentQuestionId = currentQuestion?.id
+
+  // Iniciar tiempo cuando cambia la pregunta (solo cuando cambia el índice)
+  // Usar useRef para rastrear el último índice y evitar loops
+  const prevQuestionIndexRef = useRef<number | null>(null)
+  
+  useEffect(() => {
+    if (questions.length === 0 || quizStatus !== 'in-progress') return
+    if (quizState.currentQuestionIndex >= questions.length) return
+    
+    // Solo resetear si realmente cambió el índice de la pregunta
+    const currentIndex = quizState.currentQuestionIndex
+    if (prevQuestionIndexRef.current !== currentIndex) {
+      prevQuestionIndexRef.current = currentIndex
+      
+      // Resetear estado para nueva pregunta
+      setTimeRemaining(timePerQuestion)
+      setQuestionStartTime(Date.now())
+      setSelectedAnswerId(null)
+      setIsAnswerLocked(false)
+    }
+  }, [quizState.currentQuestionIndex, quizStatus, timePerQuestion, questions.length])
 
   // Cronómetro
   useEffect(() => {
-    if (isAnswerLocked || !currentQuestion || quizStatus !== 'in-progress') return
+    if (isAnswerLocked || !currentQuestionId || quizStatus !== 'in-progress') return
 
     const interval = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
           // Tiempo agotado - bloquear respuesta automáticamente
-          const currentAnswerId = selectedAnswerId || ''
           setIsAnswerLocked(true)
-          if (currentAnswerId && currentQuestion) {
-            setQuizState((prevState) => ({
-              ...prevState,
-              answers: {
-                ...prevState.answers,
-                [currentQuestion.id]: currentAnswerId
-              }
-            }))
-          }
           return 0
         }
         return prev - 1
@@ -54,35 +66,39 @@ export function useQuiz({ questions, timePerQuestion = 25 }: UseQuizOptions) {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [isAnswerLocked, currentQuestion, selectedAnswerId, quizStatus])
+  }, [isAnswerLocked, currentQuestionId, quizStatus])
 
-  // Iniciar tiempo cuando cambia la pregunta
+  // Cronómetro - manejar tiempo agotado y guardar respuesta
   useEffect(() => {
-    if (currentQuestion && !isAnswerLocked && quizStatus === 'in-progress') {
-      setTimeRemaining(timePerQuestion)
-      setQuestionStartTime(Date.now())
-      setSelectedAnswerId(null)
-      setIsAnswerLocked(false)
+    if (timeRemaining === 0 && !isAnswerLocked && currentQuestionId && quizStatus === 'in-progress') {
+      // Tiempo agotado - guardar respuesta si hay una seleccionada
+      const currentAnswerId = selectedAnswerId
+      if (currentAnswerId) {
+        setQuizState((prevState) => ({
+          ...prevState,
+          answers: {
+            ...prevState.answers,
+            [currentQuestionId]: currentAnswerId
+          }
+        }))
+      }
     }
-  }, [currentQuestion?.id, timePerQuestion, isAnswerLocked, quizStatus])
+  }, [timeRemaining, isAnswerLocked, currentQuestionId, selectedAnswerId, quizStatus])
 
   const lockAnswer = useCallback((answerId: string) => {
-    if (isAnswerLocked || !currentQuestion) return
+    if (isAnswerLocked || !currentQuestionId) return
 
     setIsAnswerLocked(true)
     setSelectedAnswerId(answerId)
-
-    // Guardar respuesta
-    const timeSpent = questionStartTime ? Math.floor((Date.now() - questionStartTime) / 1000) : 0
     
     setQuizState((prev) => ({
       ...prev,
       answers: {
         ...prev.answers,
-        [currentQuestion.id]: answerId
+        [currentQuestionId]: answerId
       }
     }))
-  }, [isAnswerLocked, currentQuestion, questionStartTime])
+  }, [isAnswerLocked, currentQuestionId])
 
   const selectAnswer = useCallback((answerId: string) => {
     if (isAnswerLocked) return
@@ -91,22 +107,30 @@ export function useQuiz({ questions, timePerQuestion = 25 }: UseQuizOptions) {
 
   const nextQuestion = useCallback(() => {
     if (quizState.currentQuestionIndex < totalQuestions - 1) {
+      // Resetear estado antes de avanzar
+      setIsAnswerLocked(false)
+      setSelectedAnswerId(null)
+      setTimeRemaining(timePerQuestion)
+      
       setQuizState((prev) => ({
         ...prev,
         currentQuestionIndex: prev.currentQuestionIndex + 1
       }))
-      setIsAnswerLocked(false)
-      setSelectedAnswerId(null)
-      setTimeRemaining(timePerQuestion)
     } else {
-      // Quiz completado
-      setQuizState((prev) => ({
-        ...prev,
+      // Quiz completado - guardar en localStorage
+      const finalState = {
+        ...quizState,
         isCompleted: true,
         endTime: Date.now()
-      }))
+      }
+      setQuizState(finalState)
+      
+      // Guardar respuestas en localStorage para la página de resultados
+      localStorage.setItem(`quiz_answers_${questions[0]?.protocol}`, JSON.stringify(finalState.answers))
+      localStorage.setItem(`quiz_startTime_${questions[0]?.protocol}`, String(finalState.startTime))
+      localStorage.setItem(`quiz_endTime_${questions[0]?.protocol}`, String(Date.now()))
     }
-  }, [quizState.currentQuestionIndex, totalQuestions, timePerQuestion])
+  }, [quizState, totalQuestions, timePerQuestion, questions])
 
   const startQuiz = useCallback(() => {
     setQuizState({
@@ -135,15 +159,8 @@ export function useQuiz({ questions, timePerQuestion = 25 }: UseQuizOptions) {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [quizStatus])
 
-  const getSelectedAnswer = () => {
-    if (!selectedAnswerId || !currentQuestion) return null
-    return currentQuestion.answers.find(a => a.id === selectedAnswerId)
-  }
-
-  const getCorrectAnswer = () => {
-    if (!currentQuestion) return null
-    return currentQuestion.answers.find(a => a.isCorrect)
-  }
+  // Nota: getSelectedAnswer y getCorrectAnswer ya no son necesarios
+  // porque las respuestas correctas vienen del servidor via feedback
 
   return {
     currentQuestion,
@@ -159,8 +176,6 @@ export function useQuiz({ questions, timePerQuestion = 25 }: UseQuizOptions) {
     selectAnswer,
     lockAnswer,
     nextQuestion,
-    startQuiz,
-    getSelectedAnswer,
-    getCorrectAnswer
+    startQuiz
   }
 }

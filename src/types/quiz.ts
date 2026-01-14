@@ -9,6 +9,13 @@ export interface Answer {
   explanation?: string
 }
 
+// Tipo para respuestas sin información de correcto/incorrecto (para cliente)
+export interface SafeAnswer {
+  id: string
+  text: string
+  // NO incluye isCorrect ni explanation
+}
+
 export interface Question {
   id: string
   text: string
@@ -17,6 +24,16 @@ export interface Question {
   difficulty: 'easy' | 'medium' | 'hard'
   protocol?: string // Protocolo DeFi relacionado (Aave, Uniswap, etc.)
   explanation?: string // Explicación general de la pregunta
+}
+
+// Tipo para preguntas sin respuestas correctas (para cliente)
+export interface SafeQuestion {
+  id: string
+  text: string
+  answers: SafeAnswer[]
+  category: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  protocol?: string
 }
 
 export interface QuizState {
@@ -52,4 +69,15 @@ export interface QuizProgress {
   current: number
   total: number
   percentage: number
+}
+
+// Tipo para feedback de respuesta
+export interface AnswerFeedback {
+  isCorrect: boolean
+  explanation?: string
+  correctAnswer?: {
+    id: string
+    text: string
+  }
+  questionExplanation?: string
 }
