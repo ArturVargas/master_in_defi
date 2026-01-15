@@ -19,9 +19,40 @@ import { VerificationProvider } from "@/contexts/VerificationContext";
 //   subsets: ["latin"],
 // });
 
+// Configuración del embed para Farcaster Mini App
+const farcasterEmbed = {
+  version: "1",
+  imageUrl: "https://masterendefi.lat/master_defi_banner.png",
+  button: {
+    title: "Comenzar a aprender",
+    action: {
+      type: "launch_miniapp",
+      name: "Master En DeFi",
+      url: "https://masterendefi.lat/",
+      splashImageUrl: "https://masterendefi.lat/splash.png",
+      splashBackgroundColor: "#000000"
+    }
+  }
+}
+
 export const metadata: Metadata = {
   title: "DeFi Learning Quiz | Aprende sobre protocolos DeFi",
   description: "Aprende sobre protocolos DeFi de manera interactiva con nuestro quiz educativo",
+  other: {
+    // Meta tag para Farcaster Mini App embeds
+    'fc:miniapp': JSON.stringify(farcasterEmbed),
+    // Backward compatibility con legacy frames
+    'fc:frame': JSON.stringify({
+      ...farcasterEmbed,
+      button: {
+        ...farcasterEmbed.button,
+        action: {
+          ...farcasterEmbed.button.action,
+          type: "launch_frame" // Legacy type
+        }
+      }
+    }),
+  },
 };
 
 export default function RootLayout({

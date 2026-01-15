@@ -1,5 +1,11 @@
 {
-  "frame": {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEyMDU4MzksInR5cGUiOiJhdXRoIiwia2V5IjoiMHgzYUE3NzM3ODA3OWYzNGY0ZDc1NmZmYThiQjIzYzcxMzY3NmMyOThBIn0",
+    "payload": "eyJkb21haW4iOiJtYXN0ZXJlbmRlZmkubGF0In0",
+    "signature": "+8PZHuI/hcMkhRpP6vxx0Z1MLTh3m9POH45xvwOxtFxbgBdGWvtxE9UqCprlwBUQ8gT+YCM3f7x6wCXmRulZBRw="
+  },
+  "miniapp": {
+    "version": "1",
     "name": "Master En DeFi",
     "iconUrl": "https://masterendefi.lat/master_defi_icon.png",
     "homeUrl": "https://masterendefi.lat/",

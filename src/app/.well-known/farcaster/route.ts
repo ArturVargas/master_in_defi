@@ -31,7 +31,8 @@ export async function GET() {
     // Retornar un manifest por defecto si hay error leyendo el archivo
     return NextResponse.json(
       {
-        frame: {
+        miniapp: {
+          version: '1',
           name: 'Master En DeFi',
           iconUrl: 'https://masterendefi.lat/master_defi_icon.png',
           homeUrl: 'https://masterendefi.lat/',

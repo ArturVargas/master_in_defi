@@ -52,10 +52,13 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
         }
 
         // Intentar obtener datos del usuario desde Farcaster SDK
-        // Nota: Esto requiere @farcaster/frame-sdk instalado
+        // Usar @farcaster/miniapp-sdk (versión actual)
         try {
-          // @ts-ignore - SDK puede no estar instalado aún
-          const { sdk } = await import('@farcaster/frame-sdk')
+          const { sdk } = await import('@farcaster/miniapp-sdk')
+          
+          // CRÍTICO: Llamar ready() para ocultar el splash screen
+          // Esto debe llamarse cuando la app esté lista para mostrar contenido
+          await sdk.actions.ready()
           
           const context = await sdk.context
           
