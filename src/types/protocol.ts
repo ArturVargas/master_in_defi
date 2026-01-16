@@ -28,6 +28,7 @@ export interface Protocol {
   risks?: string[]
   secretWord?: string // Palabra secreta del protocolo (para gamificación)
   poapEventId?: number // ID del evento POAP para este protocolo
+  status?: 'public' | 'draft' // Estado del protocolo (por defecto 'public')
 }
 
 export interface ProtocolStats {

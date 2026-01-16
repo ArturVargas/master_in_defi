@@ -32,5 +32,6 @@ export const sablier: Protocol = {
     'Dependencia de la blockchain'
   ],
   secretWord: 'FLOW_STATE_SABLIER',
-  poapEventId: 0 // Configurar en .env como POAP_EVENT_ID_SABLIER
+  poapEventId: 0, // Configurar en .env como POAP_EVENT_ID_SABLIER
+  status: 'draft' // 'public' | 'draft' - Ejemplo de protocolo en borrador
 }

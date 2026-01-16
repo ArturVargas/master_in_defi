@@ -12,16 +12,17 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const question = await getQuestionById(params.id)
+    const { id } = await params
+    const question = await getQuestionById(id)
 
     if (!question) {
       return NextResponse.json(
         {
           success: false,
-          error: `Question "${params.id}" not found`,
+          error: `Question "${id}" not found`,
         },
         { status: 404 }
       )
@@ -32,7 +33,7 @@ export async function GET(
       question,
     })
   } catch (error) {
-    console.error(`Error fetching question ${params.id}:`, error)
+    console.error('Error fetching question:', error)
     return NextResponse.json(
       {
         success: false,
@@ -51,9 +52,11 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     // Verify admin authentication
     const adminSecret = request.headers.get('x-admin-secret')
     if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
@@ -71,7 +74,7 @@ export async function PUT(
       active: body.active,
     }
 
-    const question = await updateQuestion(params.id, updates)
+    const question = await updateQuestion(id, updates)
 
     return NextResponse.json({
       success: true,
@@ -79,7 +82,7 @@ export async function PUT(
       message: `Question updated successfully`,
     })
   } catch (error) {
-    console.error(`Error updating question ${params.id}:`, error)
+    console.error('Error updating question:', error)
     return NextResponse.json(
       {
         success: false,
@@ -98,9 +101,11 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     // Verify admin authentication
     const adminSecret = request.headers.get('x-admin-secret')
     if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
@@ -114,20 +119,20 @@ export async function DELETE(
     const hardDelete = searchParams.get('hard') === 'true'
 
     if (hardDelete) {
-      await hardDeleteQuestion(params.id)
+      await hardDeleteQuestion(id)
       return NextResponse.json({
         success: true,
         message: `Question permanently deleted`,
       })
     } else {
-      await deleteQuestion(params.id)
+      await deleteQuestion(id)
       return NextResponse.json({
         success: true,
         message: `Question deactivated`,
       })
     }
   } catch (error) {
-    console.error(`Error deleting question ${params.id}:`, error)
+    console.error('Error deleting question:', error)
     return NextResponse.json(
       {
         success: false,

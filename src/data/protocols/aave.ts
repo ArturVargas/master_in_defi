@@ -33,5 +33,6 @@ export const aave: Protocol = {
     'Riesgo de volatilidad de criptomonedas'
   ],
   secretWord: 'GHO_GHOST_VAULT',
-  poapEventId: 0 // Configurar en .env como POAP_EVENT_ID_AAVE
+  poapEventId: 0, // Configurar en .env como POAP_EVENT_ID_AAVE
+  status: 'public' // 'public' | 'draft' - por defecto es 'public'
 }

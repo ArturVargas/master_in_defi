@@ -32,5 +32,6 @@ export const morpho: Protocol = {
     'Dependencia de oráculos'
   ],
   secretWord: 'EFFICIENT_LIQUIDITY_88',
-  poapEventId: 0 // Configurar en .env como POAP_EVENT_ID_MORPHO
+  poapEventId: 0, // Configurar en .env como POAP_EVENT_ID_MORPHO
+  status: 'public' // 'public' | 'draft'
 }

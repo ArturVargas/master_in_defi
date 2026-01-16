@@ -44,12 +44,11 @@ export async function POST(request: NextRequest) {
     // Retornar feedback
     return NextResponse.json({
       isCorrect: answer.isCorrect,
-      explanation: answer.explanation,
+      explanation: question.explanation, // La explicación está en la pregunta, no en la respuesta
       correctAnswer: correctAnswer ? {
         id: correctAnswer.id,
         text: correctAnswer.text
-      } : null,
-      questionExplanation: question.explanation
+      } : null
     })
   } catch (error) {
     console.error('Error getting feedback:', error)

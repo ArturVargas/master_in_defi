@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { markCodeAsClaimed } from '@/lib/db/poap-codes'
+import { neon } from '@neondatabase/serverless'
+import { config } from '@/lib/config'
+
+const sqlClient = neon(config.database.url)
 
 /**
  * POST /api/poap/confirm-claim
@@ -17,13 +21,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // Buscar el código en la base de datos
-    const { sql } = await import('@/lib/db/poap-codes')
-    const { neon } = await import('@neondatabase/serverless')
-    const { config } = await import('@/lib/config')
-
-    const sqlClient = neon(config.database.url)
 
     // Obtener el código
     const codes = await sqlClient`

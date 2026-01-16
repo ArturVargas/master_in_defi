@@ -27,18 +27,20 @@ export default function Home() {
 
         {/* Macintosh 3D en columna vertical - uno por protocolo */}
         <div className="flex flex-col gap-12">
-          {protocols.map((protocol) => {
-            const protocolQuestions = questions.filter(q => q.protocol === protocol.id)
-            const questionCount = protocolQuestions.length
-            
-            return (
-              <MacintoshProtocolCard
-                key={protocol.id}
-                protocol={protocol}
-                questionCount={questionCount}
-              />
-            )
-          })}
+          {protocols
+            .filter((protocol) => protocol.status !== 'draft')
+            .map((protocol) => {
+              const protocolQuestions = questions.filter(q => q.protocol === protocol.id)
+              const questionCount = protocolQuestions.length
+
+              return (
+                <MacintoshProtocolCard
+                  key={protocol.id}
+                  protocol={protocol}
+                  questionCount={questionCount}
+                />
+              )
+            })}
         </div>
       </main>
     </div>
