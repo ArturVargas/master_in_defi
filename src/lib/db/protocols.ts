@@ -15,6 +15,7 @@ export interface Protocol {
   category: string | null
   difficulty: string | null
   secretWord: string | null
+  status: 'public' | 'draft'
   active: boolean
   orderIndex: number
   createdAt: Date
@@ -36,12 +37,13 @@ export async function getAllProtocols(): Promise<Protocol[]> {
         category,
         difficulty,
         secret_word as "secretWord",
+        COALESCE(status, 'public') as status,
         active,
         order_index as "orderIndex",
         created_at as "createdAt",
         updated_at as "updatedAt"
       FROM protocols
-      WHERE active = true
+      WHERE active = true AND COALESCE(status, 'public') = 'public'
       ORDER BY order_index ASC, name ASC
     `
     return result as Protocol[]
@@ -66,6 +68,7 @@ export async function getAllProtocolsAdmin(): Promise<Protocol[]> {
         category,
         difficulty,
         secret_word as "secretWord",
+        COALESCE(status, 'public') as status,
         active,
         order_index as "orderIndex",
         created_at as "createdAt",
@@ -95,6 +98,7 @@ export async function getProtocolById(id: string): Promise<Protocol | null> {
         category,
         difficulty,
         secret_word as "secretWord",
+        COALESCE(status, 'public') as status,
         active,
         order_index as "orderIndex",
         created_at as "createdAt",
@@ -120,7 +124,7 @@ export async function createProtocol(
     const result = await sql`
       INSERT INTO protocols (
         id, name, title, description, logo_url, category,
-        difficulty, secret_word, active, order_index
+        difficulty, secret_word, status, active, order_index
       ) VALUES (
         ${protocol.id},
         ${protocol.name},
@@ -130,6 +134,7 @@ export async function createProtocol(
         ${protocol.category || null},
         ${protocol.difficulty || null},
         ${protocol.secretWord || null},
+        ${protocol.status || 'public'},
         ${protocol.active},
         ${protocol.orderIndex}
       )
@@ -142,6 +147,7 @@ export async function createProtocol(
         category,
         difficulty,
         secret_word as "secretWord",
+        status,
         active,
         order_index as "orderIndex",
         created_at as "createdAt",
@@ -172,6 +178,7 @@ export async function updateProtocol(
         category = COALESCE(${updates.category || null}, category),
         difficulty = COALESCE(${updates.difficulty || null}, difficulty),
         secret_word = COALESCE(${updates.secretWord || null}, secret_word),
+        status = COALESCE(${updates.status || null}, status),
         active = COALESCE(${updates.active !== undefined ? updates.active : null}, active),
         order_index = COALESCE(${updates.orderIndex !== undefined ? updates.orderIndex : null}, order_index),
         updated_at = NOW()
@@ -185,6 +192,7 @@ export async function updateProtocol(
         category,
         difficulty,
         secret_word as "secretWord",
+        status,
         active,
         order_index as "orderIndex",
         created_at as "createdAt",

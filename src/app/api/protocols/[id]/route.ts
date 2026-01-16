@@ -74,6 +74,7 @@ export async function PUT(
       category: body.category,
       difficulty: body.difficulty,
       secretWord: body.secretWord,
+      status: body.status,
       active: body.active,
       orderIndex: body.orderIndex,
     }

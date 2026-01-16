@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS protocols (
   category VARCHAR(50),
   difficulty VARCHAR(20),
   secret_word VARCHAR(100),
+  status VARCHAR(10) DEFAULT 'public' CHECK (status IN ('public', 'draft')),
   active BOOLEAN DEFAULT TRUE,
   order_index INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW(),
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS protocols (
 
 -- Indexes para protocols
 CREATE INDEX IF NOT EXISTS idx_protocols_active ON protocols(active);
+CREATE INDEX IF NOT EXISTS idx_protocols_status ON protocols(status);
 CREATE INDEX IF NOT EXISTS idx_protocols_category ON protocols(category);
 CREATE INDEX IF NOT EXISTS idx_protocols_order ON protocols(order_index);
 
@@ -51,6 +53,7 @@ CREATE INDEX IF NOT EXISTS idx_protocols_order ON protocols(order_index);
 COMMENT ON TABLE protocols IS 'Stores DeFi protocol information';
 COMMENT ON COLUMN protocols.id IS 'Protocol identifier (aave, morpho, sablier)';
 COMMENT ON COLUMN protocols.secret_word IS 'Secret word revealed after passing quiz';
+COMMENT ON COLUMN protocols.status IS 'Protocol visibility: public (visible) or draft (hidden)';
 COMMENT ON COLUMN protocols.order_index IS 'Display order in the UI';
 
 -- ============================================
