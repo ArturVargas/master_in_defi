@@ -5,9 +5,9 @@
  * Renderiza el modelo 3D del Macintosh según las especificaciones técnicas
  */
 
-import { useMemo } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 import { Box, RoundedBox, Text } from '@react-three/drei'
-import { PlaneGeometry } from 'three'
+import { PlaneGeometry, CanvasTexture } from 'three'
 import { usePlasticTextures } from './textures'
 
 // Colores según especificaciones
@@ -43,9 +43,11 @@ const DIMENSIONS = {
 interface MacintoshModelProps {
   /** Si es true, muestra detalles opcionales como base y logo */
   showDetails?: boolean
+  /** Nombre del protocolo a mostrar en la pantalla */
+  protocolName?: string
 }
 
-export function MacintoshModel({ showDetails = false }: MacintoshModelProps) {
+export function MacintoshModel({ showDetails = false, protocolName }: MacintoshModelProps) {
   // Generar texturas procedurales para materiales de plástico
   const mainBodyTextures = usePlasticTextures(COLORS.mainBody, 512)
   const bezelTextures = usePlasticTextures(COLORS.screenBezel, 512)
@@ -124,20 +126,141 @@ export function MacintoshModel({ showDetails = false }: MacintoshModelProps) {
     return geometry
   }, [])
 
+  // Textura de pantalla generada con Canvas 2D para mostrar el nombre del protocolo
+  const screenTexture = useMemo(() => {
+    if (!protocolName) return null
+    
+    const canvas = document.createElement('canvas')
+    canvas.width = 512
+    canvas.height = 512
+    const ctx = canvas.getContext('2d')!
+    
+    // Fondo muy oscuro (no completamente negro para mejor contraste)
+    ctx.fillStyle = '#050505'
+    ctx.fillRect(0, 0, 512, 512)
+    
+    // Efecto de scanlines
+    ctx.strokeStyle = 'rgba(0, 255, 65, 0.03)'
+    ctx.lineWidth = 1
+    for (let y = 0; y < 512; y += 4) {
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(512, y)
+      ctx.stroke()
+    }
+    
+    // Texto inicial (se actualizará con useEffect)
+    ctx.fillStyle = '#00ff88' // Verde más brillante y saturado
+    ctx.font = 'bold 52px monospace' // Tamaño aumentado para mejor legibilidad
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.shadowColor = '#00ff88'
+    ctx.shadowBlur = 30 // Glow moderado
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 0
+    
+    const texture = new CanvasTexture(canvas)
+    texture.needsUpdate = true
+    return texture
+  }, [protocolName])
+
+  // Actualizar la textura con animación typewriter
+  const animationFrameRef = useRef<number | undefined>(undefined)
+  const displayedTextRef = useRef('')
+  const startTimeRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!protocolName || !screenTexture) return
+
+    const canvas = screenTexture.image as HTMLCanvasElement
+    const ctx = canvas.getContext('2d')!
+    const typingSpeed = 100 // ms por letra
+    displayedTextRef.current = ''
+    startTimeRef.current = null
+
+    const animate = (timestamp: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = timestamp
+      }
+
+      const elapsed = timestamp - startTimeRef.current
+      const targetIndex = Math.floor(elapsed / typingSpeed)
+
+      if (targetIndex <= protocolName.length) {
+        // Limpiar canvas con fondo muy oscuro
+        ctx.fillStyle = '#050505'
+        ctx.fillRect(0, 0, 512, 512)
+
+        // Scanlines
+        ctx.strokeStyle = 'rgba(0, 255, 65, 0.03)'
+        ctx.lineWidth = 1
+        for (let y = 0; y < 512; y += 4) {
+          ctx.beginPath()
+          ctx.moveTo(0, y)
+          ctx.lineTo(512, y)
+          ctx.stroke()
+        }
+
+        // Texto actualizado con iluminación moderada
+        displayedTextRef.current = protocolName.slice(0, targetIndex)
+        
+        // Dibujar texto con múltiples capas para mayor intensidad y contraste
+        const text = `> ${displayedTextRef.current}`
+        
+        // Primera capa: glow suave (más difuso) en verde más brillante
+        ctx.fillStyle = '#00ff88'
+        ctx.font = 'bold 52px monospace'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.shadowColor = '#00ff88'
+        ctx.shadowBlur = 40 // Glow más amplio
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 0
+        ctx.fillText(text, 256, 256 - 30)
+        
+        // Segunda capa: texto sólido (más nítido y brillante) en verde más brillante
+        ctx.shadowBlur = 0 // Sin glow en la segunda capa para nitidez
+        ctx.fillStyle = '#00ff88'
+        ctx.fillText(text, 256, 256 - 30)
+
+        // Cursor parpadeante (ajustado proporcionalmente) en verde más brillante
+        const showCursor = Math.floor(timestamp / 530) % 2 === 0
+        if (showCursor && targetIndex < protocolName.length) {
+          ctx.fillStyle = '#00ff88'
+          ctx.shadowBlur = 20
+          ctx.fillRect(256 + ctx.measureText(text).width / 2 + 8, 256 - 30 - 26, 12, 52)
+        }
+
+        screenTexture.needsUpdate = true
+        animationFrameRef.current = requestAnimationFrame(animate)
+      }
+    }
+
+    animationFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [protocolName, screenTexture])
+
   // Material de pantalla CRT con propiedades de vidrio
   const screenMaterialProps = useMemo(() => ({
     color: COLORS.screen,
     roughness: 0.1, // Vidrio liso
     metalness: 0.0,
     // Propiedades de vidrio
-    transmission: 0.1, // Ligera transparencia (permite ver reflejos)
+    transmission: protocolName ? 0.02 : 0.1, // Transparencia moderada cuando hay contenido
     thickness: DIMENSIONS.screenDepth, // Grosor del vidrio
     ior: 1.5, // Índice de refracción del vidrio
-    envMapIntensity: 0.3, // Reflejos sutiles del entorno
-    // Emissive para cuando muestre contenido (se puede ajustar dinámicamente)
-    emissive: '#000000',
-    emissiveIntensity: 0,
-  }), [])
+    envMapIntensity: protocolName ? 0.1 : 0.3, // Reflejos muy reducidos cuando hay contenido para mejor legibilidad
+    // Emissive para cuando muestre contenido - mantener en negro para que solo la textura brille
+    emissive: protocolName ? '#000000' : '#000000', // Negro para que no haya fondo brillante
+    emissiveIntensity: protocolName ? 1.5 : 0, // Brillo moderado - la textura misma proporciona la luz
+    // Textura de pantalla si hay protocolName
+    map: screenTexture || undefined,
+  }), [protocolName, screenTexture])
 
   // Material mejorado para la ranura de disquete (más metálico y reflectante)
   const floppySlotMaterialProps = useMemo(() => ({
@@ -292,6 +415,24 @@ export function MacintoshModel({ showDetails = false }: MacintoshModelProps) {
           <meshPhysicalMaterial {...floppySlotDetailMaterialProps} />
         </Box>
       </group>
+
+      {/* Nombre del protocolo en la carcasa, debajo de la ranura de disquete */}
+      {protocolName && (
+        <Text
+          position={[0, -0.065, 0.076]} // Debajo de la ranura de disquete
+          fontSize={0.012}
+          color="#00ff88" // Verde brillante como en el monitor
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={0.12}
+          fontWeight="normal" // Reducido de bold a normal para menos grosor
+          outlineWidth={0.001} // Borde más delgado para mejor legibilidad
+          outlineColor="#00ff88" // Borde verde para efecto glow
+          outlineOpacity={0.4} // Opacidad del borde reducida para glow más sutil
+        >
+          {protocolName}
+        </Text>
+      )}
 
       {/* Logotipo de Apple - Parte inferior izquierda del frente */}
       {/* Símbolo de Apple estilizado - usando texto con símbolo Unicode */}

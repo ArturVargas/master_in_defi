@@ -17,12 +17,15 @@ interface MacintoshSceneProps {
   enableControls?: boolean
   /** Clase CSS adicional para el contenedor del Canvas */
   className?: string
+  /** Nombre del protocolo a mostrar en la pantalla */
+  protocolName?: string
 }
 
 export function MacintoshScene({
   showDetails = false,
   enableControls = true,
   className,
+  protocolName,
 }: MacintoshSceneProps) {
   return (
     <div className={className} style={{ width: '100%', height: '100%' }}>
@@ -35,8 +38,8 @@ export function MacintoshScene({
         <color attach="background" args={['black']} />
 
         {/* Iluminación según especificaciones */}
-        {/* Luz Ambiental */}
-        <ambientLight intensity={0.15} color="#ffffff" />
+        {/* Luz Ambiental - muy reducida para mejor contraste del texto */}
+        <ambientLight intensity={0.04} color="#ffffff" />
 
         {/* Luz Direccional Principal (spotlight para sombras) */}
         <spotLight
@@ -44,15 +47,15 @@ export function MacintoshScene({
           position={[10, 20, 10]}
           angle={0.12}
           penumbra={1}
-          intensity={0.6} // Intensidad reducida
+          intensity={0.5} // Intensidad muy reducida para mejor contraste del texto
           castShadow={false}
           shadow-mapSize={1024}
         />
 
-        {/* Luz Direccional de Relleno */}
+        {/* Luz Direccional de Relleno - muy reducida */}
         <directionalLight
           position={[-5, 2, -5]}
-          intensity={0.3}
+          intensity={0.08}
           color="#ffffff"
         />
 
@@ -71,8 +74,8 @@ export function MacintoshScene({
             enablePan={false} // Deshabilitar pan para mantener el modelo centrado
             enableZoom={false} // Deshabilitar zoom
             enableRotate={true}
-            minDistance={0.6} // Distancia mínima fija
-            maxDistance={0.6} // Distancia máxima fija (misma que mínima = sin zoom)
+            minDistance={0.4} // Distancia mínima fija
+            maxDistance={0.4} // Distancia máxima fija (misma que mínima = sin zoom)
             minPolarAngle={Math.PI / 3} // Ángulo mínimo vertical (60 grados desde arriba)
             maxPolarAngle={Math.PI / 1.5} // Ángulo máximo vertical (120 grados desde arriba)
             autoRotate={false}
@@ -81,7 +84,7 @@ export function MacintoshScene({
         )}
 
         {/* Modelo del Macintosh */}
-        <MacintoshModel showDetails={showDetails} />
+        <MacintoshModel showDetails={showDetails} protocolName={protocolName} />
 
         {/* Post-Processing: Efectos visuales avanzados */}
         <EffectComposer>
@@ -90,7 +93,7 @@ export function MacintoshScene({
             luminanceThreshold={0} // Sin umbral para que todo brille
             mipmapBlur
             luminanceSmoothing={0.0}
-            intensity={5} // Intensidad alta como en el ejemplo
+            intensity={2} // Intensidad alta como en el ejemplo
           />
 
           {/* Vignette: Oscurecimiento sutil en los bordes para enfoque */}

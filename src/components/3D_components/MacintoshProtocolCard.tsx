@@ -5,6 +5,7 @@
  * Renderiza un Macintosh con información del protocolo
  */
 
+import { useRouter } from 'next/navigation'
 import { Protocol } from '@/types/protocol'
 import { MacintoshScene } from './MacintoshScene'
 
@@ -22,34 +23,44 @@ export function MacintoshProtocolCard({
   questionCount,
   className,
 }: MacintoshProtocolCardProps) {
+  const router = useRouter()
+
+  const handleStartQuiz = () => {
+    router.push(`/quiz/${protocol.id}`)
+  }
+
   return (
     <div
-      className={`group relative ${className}`}
+      className={`group relative rounded-2xl bg-zinc-900/50 border border-zinc-800/50 overflow-hidden backdrop-blur-sm ${className}`}
     >
       {/* Contenedor del modelo 3D */}
-      <div className="h-[400px] w-full rounded-lg overflow-hidden bg-black">
+      <div className="h-[500px] w-full overflow-hidden bg-black/30">
         <MacintoshScene
           showDetails={true}
           enableControls={true}
           className="w-full h-full"
+          protocolName={protocol.title || protocol.name}
         />
       </div>
 
-      {/* Información del protocolo (overlay o debajo del modelo) */}
-      <div className="mt-4 space-y-2">
-        <h3 className="text-xl font-bold text-white">
-          {protocol.title || protocol.name}
-        </h3>
+      {/* Divider sutil */}
+      <div className="h-px bg-gradient-to-r from-transparent via-zinc-700/50 to-transparent" />
+
+      {/* Información del protocolo integrada */}
+      <div className="px-6 py-5 space-y-2">
         <p className="text-sm text-zinc-400 line-clamp-2">
           {protocol.description}
         </p>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-2">
           <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
             {questionCount} {questionCount === 1 ? 'QUESTION' : 'QUESTIONS'}
           </span>
-          <span className="text-xs font-medium text-blue-400">
+          <button
+            onClick={handleStartQuiz}
+            className="text-xs font-medium text-[#00ff88] drop-shadow-[0_0_8px_rgba(0,255,136,0.6)] hover:text-[#00ffaa] hover:drop-shadow-[0_0_12px_rgba(0,255,170,0.8)] transition-all duration-200 cursor-pointer"
+          >
             Start Quiz →
-          </span>
+          </button>
         </div>
       </div>
     </div>

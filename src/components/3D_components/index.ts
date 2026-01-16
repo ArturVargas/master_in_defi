@@ -5,3 +5,4 @@
 export { MacintoshModel } from './MacintoshModel'
 export { MacintoshScene } from './MacintoshScene'
 export { MacintoshProtocolCard } from './MacintoshProtocolCard'
+export { ScreenContent } from './ScreenContent'
