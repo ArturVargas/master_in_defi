@@ -56,23 +56,25 @@ export function MacintoshScene({
           color="#ffffff"
         />
 
-        {/* Cámara según especificaciones */}
+        {/* Cámara en distancia intermedia */}
         <PerspectiveCamera
           makeDefault
           fov={55}
-          position={[0.4, 0.2, 0.6]}
+          position={[0.6, 0.28, 0.9]} // Distancia intermedia
           near={0.1}
           far={100}
         />
 
-        {/* Controles de órbita (rotar, zoom, pan) */}
+        {/* Controles de órbita (rotar, sin zoom, sin pan, rango Y limitado) */}
         {enableControls && (
           <OrbitControls
             enablePan={false} // Deshabilitar pan para mantener el modelo centrado
-            enableZoom={true}
+            enableZoom={false} // Deshabilitar zoom
             enableRotate={true}
-            minDistance={0.5}
-            maxDistance={2}
+            minDistance={0.6} // Distancia mínima fija
+            maxDistance={0.6} // Distancia máxima fija (misma que mínima = sin zoom)
+            minPolarAngle={Math.PI / 3} // Ángulo mínimo vertical (60 grados desde arriba)
+            maxPolarAngle={Math.PI / 1.5} // Ángulo máximo vertical (120 grados desde arriba)
             autoRotate={false}
             autoRotateSpeed={0.5}
           />
