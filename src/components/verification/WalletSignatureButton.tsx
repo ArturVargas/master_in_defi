@@ -141,7 +141,7 @@ function WalletSignatureButtonComponent({
         <Button
           onClick={handleConnect}
           disabled={connect.isPending}
-          className="w-full"
+          className="w-full bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] drop-shadow-[0_0_8px_rgba(0,255,136,0.6)] hover:bg-[#00ff88]/30 hover:drop-shadow-[0_0_12px_rgba(0,255,136,0.8)] transition-all duration-200 font-mono"
         >
           {connect.isPending ? (
             <>
@@ -171,7 +171,7 @@ function WalletSignatureButtonComponent({
       <Button
         onClick={handleSign}
         disabled={signMessage.isPending}
-        className="w-full"
+        className="w-full bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] drop-shadow-[0_0_8px_rgba(0,255,136,0.6)] hover:bg-[#00ff88]/30 hover:drop-shadow-[0_0_12px_rgba(0,255,136,0.8)] transition-all duration-200 font-mono"
       >
         {signMessage.isPending ? (
           <>

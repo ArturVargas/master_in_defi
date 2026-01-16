@@ -5,7 +5,7 @@
  * Basado en ConnectHub: https://github.com/ArturVargas/ConnectHub
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo, memo } from 'react'
 import { useSelf } from '@/contexts/SelfContext'
 import { useFarcaster } from '@/contexts/FarcasterContext'
 import { useConnections, useConnect, useConnectors } from 'wagmi'
@@ -199,7 +199,20 @@ function WidgetContent({
 }) {
   // Auto-mostrar QR cuando hay wallet conectada y selfApp disponible
   // Si showQR es false pero hay selfApp, mostrar automáticamente
-  const shouldShowQR = showQR || (isConnected && !!selfApp && !!universalLink)
+  // Memoizar para evitar re-renders innecesarios
+  const shouldShowQR = useMemo(() => {
+    return showQR || (isConnected && !!selfApp && !!universalLink)
+  }, [showQR, isConnected, selfApp, universalLink])
+  
+  // Memoizar callbacks para evitar que SelfQRcodeWrapper se remonte
+  const handleQRSuccess = useCallback(() => {
+    console.log('QR verification successful')
+    onVerificationSuccess()
+  }, [onVerificationSuccess])
+  
+  const handleQRError = useCallback((err: unknown) => {
+    console.error('QR verification error:', err)
+  }, [])
   if (isVerified && verificationData) {
     return (
       <div className="space-y-3">
@@ -264,25 +277,12 @@ function WidgetContent({
       )}
 
       {/* QR Code Display */}
-      {shouldShowQR && selfApp && (
-        <div className="flex flex-col items-center space-y-3">
-          <div className="bg-white p-4 rounded-lg border">
-            {/* @ts-expect-error - SelfQRcodeWrapper de @selfxyz/qrcode puede no estar disponible */}
-            <SelfQRcodeWrapper
-              selfApp={selfApp}
-              onSuccess={() => {
-                console.log('QR verification successful')
-                onVerificationSuccess()
-              }}
-              onError={(err: unknown) => {
-                console.error('QR verification error:', err)
-              }}
-            />
-          </div>
-          <p className="text-xs text-zinc-400 text-center">
-            Escanea con la app Self Protocol
-          </p>
-        </div>
+      {shouldShowQR && selfApp && SelfQRcodeWrapper && (
+        <QRCodeDisplay
+          selfApp={selfApp}
+          onSuccess={handleQRSuccess}
+          onError={handleQRError}
+        />
       )}
 
       {/* Mensaje y botón si no hay wallet conectada */}
@@ -299,7 +299,7 @@ function WidgetContent({
           <Button
             onClick={onConnectWallet}
             disabled={isConnecting}
-            className="w-full"
+            className="w-full bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] drop-shadow-[0_0_8px_rgba(0,255,136,0.6)] hover:bg-[#00ff88]/30 hover:drop-shadow-[0_0_12px_rgba(0,255,136,0.8)] transition-all duration-200 font-mono"
           >
             {isConnecting ? (
               <>
@@ -359,7 +359,7 @@ function WidgetContent({
           <Button
             onClick={onVerify}
             disabled={isVerifying || !universalLink}
-            className="w-full"
+            className="w-full bg-[#00ff88]/20 border border-[#00ff88]/50 text-[#00ff88] drop-shadow-[0_0_8px_rgba(0,255,136,0.6)] hover:bg-[#00ff88]/30 hover:drop-shadow-[0_0_12px_rgba(0,255,136,0.8)] transition-all duration-200 font-mono"
           >
             {isVerifying ? (
               <>
@@ -530,6 +530,49 @@ function ContractVerificationContent({
     </div>
   )
 }
+
+// Componente memoizado para el QR Code para evitar re-montajes innecesarios
+const QRCodeDisplay = memo(({
+  selfApp,
+  onSuccess,
+  onError
+}: {
+  selfApp: SelfApp
+  onSuccess: () => void
+  onError: (err: unknown) => void
+}) => {
+  if (!SelfQRcodeWrapper) {
+    return (
+      <div className="flex flex-col items-center space-y-3">
+        <div className="bg-white p-4 rounded-lg border">
+          <p className="text-sm text-zinc-400">Cargando QR code...</p>
+        </div>
+        <p className="text-xs text-zinc-400 text-center">
+          Escanea con la app Self Protocol
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center space-y-3">
+      <div className="bg-white p-4 rounded-lg border">
+        {SelfQRcodeWrapper && (
+          <SelfQRcodeWrapper
+            selfApp={selfApp}
+            onSuccess={onSuccess}
+            onError={onError}
+          />
+        )}
+      </div>
+      <p className="text-xs text-zinc-400 text-center">
+        Escanea con la app Self Protocol
+      </p>
+    </div>
+  )
+})
+
+QRCodeDisplay.displayName = 'QRCodeDisplay'
 
 // Importar SelfQRcodeWrapper dinámicamente
 // Tipo del componente de QR code de Self Protocol

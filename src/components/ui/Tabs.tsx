@@ -57,16 +57,36 @@ export function TabsTrigger({ value, className, children, ...props }: TabsTrigge
 
   const isActive = context.value === value
 
+  // Detectar si hay estilos personalizados
+  const hasCustomStyles = className?.includes('data-[state=active]') || className?.includes('aria-[selected=true]')
+
   return (
     <button
       className={cn(
         'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
-        isActive
-          ? 'bg-white text-foreground shadow-sm dark:bg-zinc-900'
-          : 'text-zinc-600 hover:bg-zinc-200 hover:text-foreground dark:text-zinc-400 dark:hover:bg-zinc-700',
+        // Estilos por defecto solo si no hay estilos personalizados
+        !hasCustomStyles && (
+          isActive
+            ? 'bg-white text-foreground shadow-sm dark:bg-zinc-900'
+            : 'text-zinc-600 hover:bg-zinc-200 hover:text-foreground dark:text-zinc-400 dark:hover:bg-zinc-700'
+        ),
+        // Aplicar estilos personalizados basados en isActive cuando hay data-[state=active] en className
+        hasCustomStyles && isActive && [
+          'text-[#00ff88]',
+          'drop-shadow-[0_0_6px_rgba(0,255,136,0.5)]',
+          'bg-zinc-900/50',
+          'border-b-2',
+          'border-[#00ff88]'
+        ],
+        hasCustomStyles && !isActive && [
+          'text-zinc-400',
+          'hover:text-zinc-300'
+        ],
         className
       )}
       onClick={() => context.onValueChange(value)}
+      data-state={isActive ? 'active' : 'inactive'}
+      aria-selected={isActive}
       {...props}
     >
       {children}
