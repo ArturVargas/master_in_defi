@@ -12,16 +12,17 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const protocol = await getProtocolById(params.id)
+    const { id } = await params
+    const protocol = await getProtocolById(id)
 
     if (!protocol) {
       return NextResponse.json(
         {
           success: false,
-          error: `Protocol "${params.id}" not found`,
+          error: `Protocol "${id}" not found`,
         },
         { status: 404 }
       )
@@ -32,7 +33,8 @@ export async function GET(
       protocol,
     })
   } catch (error) {
-    console.error(`Error fetching protocol ${params.id}:`, error)
+    const { id } = await params
+    console.error(`Error fetching protocol ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
@@ -50,7 +52,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin authentication
@@ -62,6 +64,7 @@ export async function PUT(
       )
     }
 
+    const { id } = await params
     const body = await request.json()
     const updates = {
       name: body.name,
@@ -75,15 +78,16 @@ export async function PUT(
       orderIndex: body.orderIndex,
     }
 
-    const protocol = await updateProtocol(params.id, updates)
+    const protocol = await updateProtocol(id, updates)
 
     return NextResponse.json({
       success: true,
       protocol,
-      message: `Protocol "${params.id}" updated successfully`,
+      message: `Protocol "${id}" updated successfully`,
     })
   } catch (error) {
-    console.error(`Error updating protocol ${params.id}:`, error)
+    const { id } = await params
+    console.error(`Error updating protocol ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
@@ -102,7 +106,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin authentication
@@ -114,24 +118,26 @@ export async function DELETE(
       )
     }
 
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     const hardDelete = searchParams.get('hard') === 'true'
 
     if (hardDelete) {
-      await hardDeleteProtocol(params.id)
+      await hardDeleteProtocol(id)
       return NextResponse.json({
         success: true,
-        message: `Protocol "${params.id}" permanently deleted`,
+        message: `Protocol "${id}" permanently deleted`,
       })
     } else {
-      await deleteProtocol(params.id)
+      await deleteProtocol(id)
       return NextResponse.json({
         success: true,
-        message: `Protocol "${params.id}" deactivated`,
+        message: `Protocol "${id}" deactivated`,
       })
     }
   } catch (error) {
-    console.error(`Error deleting protocol ${params.id}:`, error)
+    const { id } = await params
+    console.error(`Error deleting protocol ${id}:`, error)
     return NextResponse.json(
       {
         success: false,

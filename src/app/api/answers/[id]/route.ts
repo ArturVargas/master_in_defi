@@ -7,7 +7,7 @@ import { updateAnswer, deleteAnswer } from '@/lib/db/questions'
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin authentication
@@ -19,6 +19,7 @@ export async function PUT(
       )
     }
 
+    const { id } = await params
     const body = await request.json()
     const updates = {
       text: body.text,
@@ -26,7 +27,7 @@ export async function PUT(
       orderIndex: body.orderIndex,
     }
 
-    const answer = await updateAnswer(params.id, updates)
+    const answer = await updateAnswer(id, updates)
 
     return NextResponse.json({
       success: true,
@@ -34,7 +35,8 @@ export async function PUT(
       message: 'Answer updated successfully',
     })
   } catch (error) {
-    console.error(`Error updating answer ${params.id}:`, error)
+    const { id } = await params
+    console.error(`Error updating answer ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
@@ -52,7 +54,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin authentication
@@ -64,14 +66,16 @@ export async function DELETE(
       )
     }
 
-    await deleteAnswer(params.id)
+    const { id } = await params
+    await deleteAnswer(id)
 
     return NextResponse.json({
       success: true,
       message: 'Answer deleted successfully',
     })
   } catch (error) {
-    console.error(`Error deleting answer ${params.id}:`, error)
+    const { id } = await params
+    console.error(`Error deleting answer ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
