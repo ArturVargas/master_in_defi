@@ -42,14 +42,15 @@ export async function POST(request: NextRequest) {
     const correctAnswer = question.answers.find(a => a.isCorrect)
 
     // Retornar feedback
+    // Nota: Las respuestas individuales no tienen explicación en la BD,
+    // solo las preguntas tienen explicación
     return NextResponse.json({
       isCorrect: answer.isCorrect,
-      explanation: answer.explanation,
       correctAnswer: correctAnswer ? {
         id: correctAnswer.id,
         text: correctAnswer.text
       } : null,
-      questionExplanation: question.explanation
+      questionExplanation: question.explanation || null
     })
   } catch (error) {
     console.error('Error getting feedback:', error)

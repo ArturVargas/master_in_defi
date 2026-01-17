@@ -384,8 +384,8 @@ export default function QuizStartPage() {
                   <div className="mt-0.5 text-green-500">✓</div>
                   <div>
                     <p className="font-semibold text-green-400">Correct!</p>
-                    {feedback.explanation && (
-                      <p className="mt-1 text-sm text-zinc-300">{feedback.explanation}</p>
+                    {feedback.questionExplanation && (
+                      <p className="mt-1 text-sm text-zinc-300">{feedback.questionExplanation}</p>
                     )}
                   </div>
                 </div>
@@ -394,8 +394,8 @@ export default function QuizStartPage() {
                   <div className="mt-0.5 text-red-500">✗</div>
                   <div>
                     <p className="font-semibold text-red-400">Incorrect</p>
-                    {feedback.explanation && (
-                      <p className="mt-1 text-sm text-zinc-300">{feedback.explanation}</p>
+                    {feedback.questionExplanation && (
+                      <p className="mt-1 text-sm text-zinc-300">{feedback.questionExplanation}</p>
                     )}
                     {feedback.correctAnswer && (
                       <p className="mt-2 text-sm text-green-400">

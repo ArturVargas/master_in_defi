@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { markCodeAsClaimed } from '@/lib/db/poap-codes'
+import { markCodeAsClaimed, getCodeByQrHash } from '@/lib/db/poap-codes'
 
 /**
  * POST /api/poap/confirm-claim
@@ -18,31 +18,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Buscar el código en la base de datos
-    const { sql } = await import('@/lib/db/poap-codes')
-    const { neon } = await import('@neondatabase/serverless')
-    const { config } = await import('@/lib/config')
+    // Buscar el código en la base de datos usando la función exportada
+    const code = await getCodeByQrHash(claimCode)
 
-    const sqlClient = neon(config.database.url)
-
-    // Obtener el código
-    const codes = await sqlClient`
-      SELECT id FROM poap_codes
-      WHERE qr_hash = ${claimCode}
-      LIMIT 1
-    `
-
-    if (codes.length === 0) {
+    if (!code) {
       return NextResponse.json(
         { success: false, message: 'Claim code not found' },
         { status: 404 }
       )
     }
 
-    const codeId = codes[0].id
-
     // Marcar como reclamado con timestamp actualizado
-    await markCodeAsClaimed(codeId, walletAddress || 'unknown', undefined, undefined)
+    await markCodeAsClaimed(code.id, walletAddress || 'unknown', undefined, undefined)
 
     console.log(`[POAP Confirm] ✅ Code ${claimCode} confirmed as claimed by ${walletAddress}`)
 

@@ -205,29 +205,32 @@ export async function createQuestion(
 
     // Insert answers
     if (answers.length > 0) {
-      const answersResult = await sql`
-        INSERT INTO answers (question_id, text, is_correct, order_index)
-        SELECT * FROM ${sql(
-          answers.map((a) => [
-            createdQuestion.id,
-            a.text,
-            a.isCorrect,
-            a.orderIndex,
-          ])
-        )}
-        RETURNING
-          id,
-          question_id as "questionId",
-          text,
-          is_correct as "isCorrect",
-          order_index as "orderIndex",
-          created_at as "createdAt",
-          updated_at as "updatedAt"
-      `
+      // Insert answers one by one (simpler and more reliable)
+      const answersResult: Answer[] = []
+      for (const answer of answers) {
+        const result = await sql`
+          INSERT INTO answers (question_id, text, is_correct, order_index)
+          VALUES (
+            ${createdQuestion.id},
+            ${answer.text},
+            ${answer.isCorrect},
+            ${answer.orderIndex}
+          )
+          RETURNING
+            id,
+            question_id as "questionId",
+            text,
+            is_correct as "isCorrect",
+            order_index as "orderIndex",
+            created_at as "createdAt",
+            updated_at as "updatedAt"
+        `
+        answersResult.push(result[0] as Answer)
+      }
 
       return {
         ...createdQuestion,
-        answers: answersResult as Answer[],
+        answers: answersResult,
       }
     }
 
