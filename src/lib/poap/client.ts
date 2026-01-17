@@ -15,41 +15,80 @@ export class PoapClient {
   private compass: PoapCompass
   private momentsApi: PoapMomentsApi
   private apiKey: string
+  private clientId: string
+  private clientSecret: string
   private authProvider: AuthenticationProviderHttp
 
   constructor(apiKey: string, clientId: string, clientSecret: string) {
     this.apiKey = apiKey
+    this.clientId = clientId
+    this.clientSecret = clientSecret
 
     // Initialize authentication provider
     this.authProvider = new AuthenticationProviderHttp(clientId, clientSecret)
 
     // Initialize POAP Compass (for drops and minting)
+    // Note: PoapCompass may only accept apiKey in newer versions
     this.compass = new PoapCompass({
       apiKey,
-      authProvider: this.authProvider,
     })
 
     // Initialize Moments API
+    // PoapMomentsApi accepts authenticationProvider, not apiKey
     this.momentsApi = new PoapMomentsApi({
-      apiKey,
-      authProvider: this.authProvider,
+      authenticationProvider: this.authProvider,
     })
   }
 
   /**
    * Get OAuth2 access token for authenticated requests
+   * Makes direct OAuth2 request to POAP API
    */
   private async getAccessToken(): Promise<string> {
     try {
-      const token = await this.authProvider.getAccessToken()
-      return token
+      // Since AuthenticationProviderHttp doesn't expose getAccessToken(),
+      // we need to make the OAuth2 request directly
+      const response = await fetch('https://api.poap.tech/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`OAuth2 token request failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data.access_token
     } catch (error) {
       console.error('Failed to get access token:', error)
       throw new Error('Authentication failed')
     }
   }
 
-  async createDrop(dropData: any) {
+  async createDrop(dropData: {
+    name: string
+    description: string
+    city: string
+    country: string
+    startDate: Date
+    endDate: Date
+    expiryDate: Date
+    eventUrl: string
+    virtualEvent: boolean
+    privateEvent: boolean
+    secretCode: string
+    email: string
+    requestedCodes: number
+    image?: File | Blob
+    filename?: string
+  }) {
     try {
       console.log('Creating drop with POAP API:', { ...dropData, image: 'File Object' })
 
@@ -194,12 +233,28 @@ export class PoapClient {
     try {
       console.log(`Minting POAP for event ${eventId} to ${address}`)
 
-      const result = await this.compass.mintToken({
-        eventId,
-        address,
-        email,
+      // Use REST API directly since PoapCompass doesn't have mintToken method
+      const accessToken = await this.getAccessToken()
+      const response = await fetch('https://api.poap.tech/actions/mint', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'X-API-Key': this.apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event_id: eventId,
+          address,
+          email,
+        }),
       })
 
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to mint POAP: ${response.status} - ${errorText}`)
+      }
+
+      const result = await response.json()
       console.log('POAP minted successfully:', result)
       return result
     } catch (error) {
@@ -211,7 +266,20 @@ export class PoapClient {
   async getDropInfo(eventId: number) {
     try {
       console.log(`Getting drop info for event ${eventId}`)
-      const drop = await this.compass.getEvent(eventId)
+      // Use REST API directly
+      const response = await fetch(`https://api.poap.tech/events/id/${eventId}`, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': this.apiKey,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to get drop info: ${response.status} - ${errorText}`)
+      }
+
+      const drop = await response.json()
       console.log('Drop info retrieved:', drop)
       return drop
     } catch (error) {
@@ -223,7 +291,20 @@ export class PoapClient {
   async getEventByFancyId(fancyId: string) {
     try {
       console.log(`Getting event by fancy ID: ${fancyId}`)
-      const event = await this.compass.getEventByFancyId(fancyId)
+      // Use REST API directly
+      const response = await fetch(`https://api.poap.tech/events/${fancyId}`, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': this.apiKey,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to get event: ${response.status} - ${errorText}`)
+      }
+
+      const event = await response.json()
       console.log('Event retrieved:', event)
       return event
     } catch (error) {
@@ -235,7 +316,22 @@ export class PoapClient {
   async getQRCode(qrHash: string) {
     try {
       console.log(`Getting QR code for: ${qrHash}`)
-      const qrCode = await this.compass.getQRCode(qrHash)
+      // Use REST API directly
+      const accessToken = await this.getAccessToken()
+      const response = await fetch(`https://api.poap.tech/qr/${qrHash}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'X-API-Key': this.apiKey,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to get QR code: ${response.status} - ${errorText}`)
+      }
+
+      const qrCode = await response.json()
       console.log('QR code retrieved:', qrCode)
       return qrCode
     } catch (error) {
