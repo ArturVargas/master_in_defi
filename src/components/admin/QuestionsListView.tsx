@@ -65,7 +65,9 @@ export function QuestionsListView() {
         setQuestions(data.questions)
 
         // Extract unique protocols
-        const uniqueProtocols = Array.from(new Set(data.questions.map((q: Question) => q.protocolId))) as string[]
+        const uniqueProtocols = Array.from(
+          new Set(data.questions.map((q: Question) => q.protocolId))
+        ) as string[]
         setProtocols(uniqueProtocols)
       } else {
         console.error('Error fetching questions:', data.error)

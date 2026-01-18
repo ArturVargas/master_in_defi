@@ -205,10 +205,10 @@ export async function createQuestion(
 
     // Insert answers
     if (answers.length > 0) {
-      const createdAnswers: Answer[] = []
-
+      // Insert answers one by one (simpler and more reliable)
+      const answersResult: Answer[] = []
       for (const answer of answers) {
-        const answersResult = await sql`
+        const result = await sql`
           INSERT INTO answers (question_id, text, is_correct, order_index)
           VALUES (
             ${createdQuestion.id},
@@ -225,12 +225,12 @@ export async function createQuestion(
             created_at as "createdAt",
             updated_at as "updatedAt"
         `
-        createdAnswers.push(answersResult[0] as Answer)
+        answersResult.push(result[0] as Answer)
       }
 
       return {
         ...createdQuestion,
-        answers: createdAnswers,
+        answers: answersResult,
       }
     }
 

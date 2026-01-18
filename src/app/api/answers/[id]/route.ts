@@ -36,7 +36,8 @@ export async function PUT(
       message: 'Answer updated successfully',
     })
   } catch (error) {
-    console.error('Error updating answer:', error)
+    const { id } = await params
+    console.error(`Error updating answer ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
@@ -75,7 +76,8 @@ export async function DELETE(
       message: 'Answer deleted successfully',
     })
   } catch (error) {
-    console.error('Error deleting answer:', error)
+    const { id } = await params
+    console.error(`Error deleting answer ${id}:`, error)
     return NextResponse.json(
       {
         success: false,

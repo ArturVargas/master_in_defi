@@ -33,7 +33,8 @@ export async function GET(
       question,
     })
   } catch (error) {
-    console.error('Error fetching question:', error)
+    const { id } = await params
+    console.error(`Error fetching question ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
@@ -82,7 +83,8 @@ export async function PUT(
       message: `Question updated successfully`,
     })
   } catch (error) {
-    console.error('Error updating question:', error)
+    const { id } = await params
+    console.error(`Error updating question ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
@@ -132,7 +134,8 @@ export async function DELETE(
       })
     }
   } catch (error) {
-    console.error('Error deleting question:', error)
+    const { id } = await params
+    console.error(`Error deleting question ${id}:`, error)
     return NextResponse.json(
       {
         success: false,

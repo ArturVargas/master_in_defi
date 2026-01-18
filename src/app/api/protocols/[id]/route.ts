@@ -33,7 +33,8 @@ export async function GET(
       protocol,
     })
   } catch (error) {
-    console.error('Error fetching protocol:', error)
+    const { id } = await params
+    console.error(`Error fetching protocol ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
@@ -87,7 +88,8 @@ export async function PUT(
       message: `Protocol "${id}" updated successfully`,
     })
   } catch (error) {
-    console.error('Error updating protocol:', error)
+    const { id } = await params
+    console.error(`Error updating protocol ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
@@ -137,7 +139,8 @@ export async function DELETE(
       })
     }
   } catch (error) {
-    console.error('Error deleting protocol:', error)
+    const { id } = await params
+    console.error(`Error deleting protocol ${id}:`, error)
     return NextResponse.json(
       {
         success: false,
