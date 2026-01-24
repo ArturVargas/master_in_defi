@@ -1,11 +1,36 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/Badge'
-import { protocols } from '@/data/protocols'
-import { questions } from '@/data/questions'
 import { MacintoshProtocolCard } from '@/components/3D_components'
+import type { Protocol } from '@/types/protocol'
 
 export default function Home() {
+  const [protocols, setProtocols] = useState<Protocol[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchProtocols() {
+      try {
+        const response = await fetch('/api/protocols')
+        const data = await response.json()
+
+        if (response.ok) {
+          // Filter only public protocols
+          const publicProtocols = data.protocols.filter((p: Protocol) => p.status === 'public')
+          setProtocols(publicProtocols)
+        } else {
+          console.error('Error fetching protocols:', data.error)
+        }
+      } catch (error) {
+        console.error('Error fetching protocols:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProtocols()
+  }, [])
 
   return (
     <div className="min-h-screen bg-black p-8 font-sans">
@@ -25,23 +50,32 @@ export default function Home() {
           </h1>
         </div>
 
-        {/* Macintosh 3D en columna vertical - uno por protocolo */}
-        <div className="flex flex-col gap-12">
-          {protocols
-            .filter((protocol) => protocol.status !== 'draft')
-            .map((protocol) => {
-              const protocolQuestions = questions.filter(q => q.protocol === protocol.id)
-              const questionCount = protocolQuestions.length
+        {/* Loading state */}
+        {loading && (
+          <div className="text-center text-zinc-400 py-12">
+            Cargando protocolos...
+          </div>
+        )}
 
-              return (
-                <MacintoshProtocolCard
-                  key={protocol.id}
-                  protocol={protocol}
-                  questionCount={questionCount}
-                />
-              )
-            })}
-        </div>
+        {/* Macintosh 3D en columna vertical - uno por protocolo */}
+        {!loading && (
+          <div className="flex flex-col gap-12">
+            {protocols.map((protocol) => (
+              <MacintoshProtocolCard
+                key={protocol.id}
+                protocol={protocol}
+                questionCount={0}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && protocols.length === 0 && (
+          <div className="text-center text-zinc-400 py-12">
+            No hay protocolos públicos disponibles
+          </div>
+        )}
       </main>
     </div>
   )
