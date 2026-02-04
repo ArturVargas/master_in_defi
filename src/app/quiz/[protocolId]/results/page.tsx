@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { QUIZ_CONFIG, ERROR_MESSAGES } from '@/lib/constants'
 import { useVerification } from '@/contexts/VerificationContext'
 import { POAPClaimButton } from '@/components/poap/POAPClaimButton'
+import { ConnectedWalletBadge } from '@/components/verification/ConnectedWalletBadge'
 
 interface QuizResults {
   score: number
@@ -131,6 +132,9 @@ export default function QuizResultsPage() {
 
         {/* Results Card */}
         <div className="relative rounded-xl border border-zinc-700/50 bg-zinc-900/50 p-8 shadow-2xl">
+          <div className="mb-6 flex justify-start">
+            <ConnectedWalletBadge />
+          </div>
           {passed ? (
             // Success State - Passed
             <>

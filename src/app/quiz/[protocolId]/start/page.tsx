@@ -9,6 +9,7 @@ import { QUIZ_CONFIG, ERROR_MESSAGES } from '@/lib/constants'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { ErrorAlert } from '@/components/ui/ErrorAlert'
 import { useVerification } from '@/contexts/VerificationContext'
+import { ConnectedWalletBadge } from '@/components/verification/ConnectedWalletBadge'
 
 // Función para mezclar un array (Fisher-Yates shuffle)
 function shuffleArray<T>(array: T[]): T[] {
@@ -216,6 +217,10 @@ export default function QuizStartPage() {
 
         {/* Quiz Card */}
         <div className="relative rounded-xl border border-zinc-700/50 bg-zinc-900/50 p-8 shadow-2xl">
+          {/* Connected wallet + Farcaster avatar */}
+          <div className="mb-6 flex justify-start">
+            <ConnectedWalletBadge />
+          </div>
           {/* Quiz Header */}
           <div className="mb-6 flex items-center justify-between">
             <div className="flex flex-col gap-2">

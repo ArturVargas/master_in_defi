@@ -12,6 +12,14 @@
     "imageUrl": "https://masterendefi.lat/master_defi_banner.png",
     "buttonTitle": "Comenzar a aprender",
     "splashImageUrl": "https://masterendefi.lat/splash.png",
-    "splashBackgroundColor": "#000000"
+    "splashBackgroundColor": "#000000",
+    "noindex": false,
+    "subtitle": "Quiz DeFi y protocolos",
+    "description": "Aprende sobre protocolos DeFi con quizzes interactivos. Aave, Morpho, Sablier y más.",
+    "primaryCategory": "education",
+    "tags": ["defi", "education", "quiz", "web3", "master"],
+    "tagline": "Aprende DeFi con quizzes",
+    "ogTitle": "Master en DeFi",
+    "ogDescription": "Aprende sobre protocolos DeFi de manera interactiva con nuestro quiz educativo."
   }
 }
