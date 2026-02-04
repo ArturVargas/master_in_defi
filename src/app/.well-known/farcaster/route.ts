@@ -32,7 +32,7 @@ export async function GET() {
     return NextResponse.json(
       {
         miniapp: {
-          version: '1',
+          version: '1.1.0',
           name: 'Master En DeFi',
           iconUrl: 'https://masterendefi.lat/master_defi_icon.png',
           homeUrl: 'https://masterendefi.lat/',

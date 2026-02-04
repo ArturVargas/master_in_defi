@@ -36,6 +36,40 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
+  // Efecto 1: Llamar ready() para ocultar el splash.
+  // En mobile el SDK puede inyectarse más tarde en el WebView, así que intentamos
+  // varias veces (inmediato + delays) para que funcione también en Warpcast móvil.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    let cancelled = false
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '')
+
+    const callReady = async () => {
+      if (cancelled) return
+      try {
+        const { sdk } = await import('@farcaster/miniapp-sdk')
+        if (!cancelled) await sdk.actions.ready()
+      } catch {
+        // SDK no disponible aún o no estamos en Farcaster
+      }
+    }
+
+    callReady()
+    if (isMobile) {
+      const t1 = window.setTimeout(callReady, 400)
+      const t2 = window.setTimeout(callReady, 1200)
+      const t3 = window.setTimeout(callReady, 2500)
+      return () => {
+        cancelled = true
+        clearTimeout(t1)
+        clearTimeout(t2)
+        clearTimeout(t3)
+      }
+    }
+    return () => { cancelled = true }
+  }, [])
+
   useEffect(() => {
     if (typeof window === 'undefined') return
 
@@ -45,23 +79,15 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
         setError(null)
 
         if (!isFarcaster) {
-          // No está en Farcaster, no hay usuario
           setUser(null)
           setIsLoading(false)
           return
         }
 
-        // Intentar obtener datos del usuario desde Farcaster SDK
-        // Usar @farcaster/miniapp-sdk (versión actual)
         try {
           const { sdk } = await import('@farcaster/miniapp-sdk')
-          
-          // CRÍTICO: Llamar ready() para ocultar el splash screen
-          // Esto debe llamarse cuando la app esté lista para mostrar contenido
-          await sdk.actions.ready()
-          
           const context = await sdk.context
-          
+
           if (context?.user) {
             setUser({
               fid: context.user.fid || null,
@@ -73,7 +99,6 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
             setUser(null)
           }
         } catch (sdkError) {
-          // SDK no disponible o no está en contexto de Farcaster
           console.warn('Farcaster SDK no disponible:', sdkError)
           setUser(null)
         }
