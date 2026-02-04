@@ -349,11 +349,18 @@ export default function QuizStartPage() {
                   } else {
                     // Enviar respuestas al servidor y obtener token
                     try {
-                      const finalAnswers = {
+                      const rawAnswers = {
                         ...quizState.answers,
-                        [currentQuestion.id]: selectedAnswerId
+                        ...(selectedAnswerId != null ? { [currentQuestion.id]: selectedAnswerId } : {})
                       }
-                      
+                      // Asegurar que todas las claves y valores son strings (la API valida typeof === 'string')
+                      const finalAnswers: Record<string, string> = {}
+                      for (const [qId, aId] of Object.entries(rawAnswers)) {
+                        if (qId != null && aId != null) {
+                          finalAnswers[String(qId)] = String(aId)
+                        }
+                      }
+
                       const response = await fetch('/api/quiz/submit', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

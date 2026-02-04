@@ -70,9 +70,10 @@ export function useQuiz({ questions, timePerQuestion = QUIZ_CONFIG.TIME_PER_QUES
   }, [isAnswerLocked, currentQuestionId, quizStatus])
 
   // Cronómetro - manejar tiempo agotado y guardar respuesta
+  // Si no había selección al terminar el tiempo, no añadimos la pregunta a answers:
+  // el servidor interpreta "pregunta ausente en el payload" como respuesta incorrecta.
   useEffect(() => {
     if (timeRemaining === 0 && !isAnswerLocked && currentQuestionId && quizStatus === 'in-progress') {
-      // Tiempo agotado - guardar respuesta si hay una seleccionada
       const currentAnswerId = selectedAnswerId
       if (currentAnswerId) {
         setQuizState((prevState) => ({
@@ -83,6 +84,8 @@ export function useQuiz({ questions, timePerQuestion = QUIZ_CONFIG.TIME_PER_QUES
           }
         }))
       }
+      // Si currentAnswerId es null: no guardamos nada; en submit esa pregunta no va en el payload
+      // y el servidor la marca como incorrecta.
     }
   }, [timeRemaining, isAnswerLocked, currentQuestionId, selectedAnswerId, quizStatus])
 

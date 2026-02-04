@@ -76,9 +76,11 @@ export function validateQuizAnswers(
 
   const answersObj = answers as Record<string, unknown>
 
-  // Validar que todas las respuestas sean strings
+  // Validar que todas las respuestas sean strings (o convertibles a string)
   for (const [questionId, answerId] of Object.entries(answersObj)) {
-    if (typeof questionId !== 'string' || typeof answerId !== 'string') {
+    const q = questionId != null ? String(questionId) : ''
+    const a = answerId != null ? String(answerId) : ''
+    if (q === '' || a === '') {
       return {
         valid: false,
         errors: ['Las respuestas deben ser strings válidos'],

@@ -68,13 +68,14 @@ export async function POST(request: NextRequest) {
     const questionResults: Array<{ questionId: string; isCorrect: boolean }> = []
 
     questions.forEach((question) => {
-      const userAnswerId = answers[question.id]
+      const rawUserAnswerId = answers[question.id]
+      const userAnswerId = rawUserAnswerId != null ? String(rawUserAnswerId).trim() : null
       if (!userAnswerId) {
         questionResults.push({ questionId: question.id, isCorrect: false })
         return
       }
 
-      const userAnswer = question.answers.find(a => a.id === userAnswerId)
+      const userAnswer = question.answers.find(a => String(a.id) === userAnswerId)
       const isCorrect = userAnswer?.isCorrect ?? false
 
       if (isCorrect) {
