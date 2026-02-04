@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllProtocols, getAllProtocolsAdmin, createProtocol } from '@/lib/db/protocols'
+import { getQuestionsByProtocol } from '@/lib/db/questions'
 
 /**
  * GET /api/protocols
- * Get all protocols (admin gets all including drafts, public gets only public)
+ * Get all protocols (admin gets all including drafts, public gets only public).
+ * Each protocol includes questionCount for the home page.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -14,10 +16,19 @@ export async function GET(request: NextRequest) {
     // Admin gets all protocols including drafts, public gets only public ones
     const protocols = isAdmin ? await getAllProtocolsAdmin() : await getAllProtocols()
 
+    const protocolsWithCount = await Promise.all(
+      protocols.map(async (p) => ({
+        ...p,
+        questionCount: (await getQuestionsByProtocol(p.id)).length,
+      }))
+    )
+
     return NextResponse.json({
       success: true,
-      protocols,
-      count: protocols.length,
+      data: {
+        protocols: protocolsWithCount,
+        count: protocolsWithCount.length,
+      },
     })
   } catch (error) {
     console.error('Error fetching protocols:', error)
@@ -53,6 +64,7 @@ export async function POST(request: NextRequest) {
       name,
       title,
       description,
+      docs,
       logoUrl,
       category,
       difficulty,
@@ -80,6 +92,7 @@ export async function POST(request: NextRequest) {
       name,
       title: title || null,
       description: description || null,
+      docs: docs ?? null,
       logoUrl: logoUrl || null,
       category: category || null,
       difficulty: difficulty || null,
@@ -92,8 +105,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        protocol,
-        message: `Protocol "${name}" created successfully`,
+        data: {
+          protocol,
+          message: `Protocol "${name}" created successfully`,
+        },
       },
       { status: 201 }
     )

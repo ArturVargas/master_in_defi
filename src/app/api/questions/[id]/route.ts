@@ -79,8 +79,10 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      question,
-      message: `Question updated successfully`,
+      data: {
+        question,
+        message: `Question updated successfully`,
+      },
     })
   } catch (error) {
     const { id } = await params

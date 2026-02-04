@@ -4,7 +4,7 @@
  * Component to display and manage protocols
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 
@@ -13,6 +13,7 @@ interface Protocol {
   name: string
   title?: string
   description?: string
+  docs?: string
   logoUrl?: string
   category?: string
   difficulty?: string
@@ -24,7 +25,12 @@ interface Protocol {
   updatedAt: string
 }
 
-export function ProtocolsListView() {
+interface ProtocolsListViewProps {
+  /** Admin secret del login; si está presente, la API devuelve todos los protocolos (incl. draft) */
+  adminSecret?: string
+}
+
+export function ProtocolsListView({ adminSecret: adminSecretProp = '' }: ProtocolsListViewProps) {
   const [protocols, setProtocols] = useState<Protocol[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -34,6 +40,7 @@ export function ProtocolsListView() {
     name: '',
     title: '',
     description: '',
+    docs: '',
     logoUrl: '',
     category: 'lending',
     difficulty: 'intermediate',
@@ -45,34 +52,32 @@ export function ProtocolsListView() {
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
 
-  useEffect(() => {
-    fetchProtocols()
-  }, [])
-
-  const fetchProtocols = async () => {
+  const fetchProtocols = useCallback(async () => {
     setLoading(true)
     try {
-      // Get admin secret from localStorage or sessionStorage if available
-      const adminSecret = process.env.NEXT_PUBLIC_ADMIN_SECRET || ''
-
       const response = await fetch('/api/protocols', {
-        headers: adminSecret ? {
-          'x-admin-secret': adminSecret
-        } : {}
+        headers: adminSecretProp ? { 'x-admin-secret': adminSecretProp } : {},
       })
-      const data = await response.json()
+      const json = await response.json()
 
       if (response.ok) {
-        setProtocols(data.protocols)
+        const payload = json.data
+        if (payload?.protocols && Array.isArray(payload.protocols)) {
+          setProtocols(payload.protocols)
+        }
       } else {
-        console.error('Error fetching protocols:', data.error)
+        console.error('Error fetching protocols:', json?.error)
       }
     } catch (error) {
       console.error('Error fetching protocols:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [adminSecretProp])
+
+  useEffect(() => {
+    fetchProtocols()
+  }, [fetchProtocols])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -108,6 +113,7 @@ export function ProtocolsListView() {
           name: '',
           title: '',
           description: '',
+          docs: '',
           logoUrl: '',
           category: 'lending',
           difficulty: 'intermediate',
@@ -137,6 +143,7 @@ export function ProtocolsListView() {
       name: protocol.name,
       title: protocol.title || '',
       description: protocol.description || '',
+      docs: protocol.docs || '',
       logoUrl: protocol.logoUrl || '',
       category: protocol.category || 'lending',
       difficulty: protocol.difficulty || 'intermediate',
@@ -157,6 +164,7 @@ export function ProtocolsListView() {
       name: '',
       title: '',
       description: '',
+      docs: '',
       logoUrl: '',
       category: 'lending',
       difficulty: 'intermediate',
@@ -284,7 +292,7 @@ export function ProtocolsListView() {
 
             <div>
               <label htmlFor="description" className={labelClass}>
-                Descripción
+                Descripción (resumen corto para cards)
               </label>
               <textarea
                 id="description"
@@ -292,8 +300,25 @@ export function ProtocolsListView() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
                 className={inputClass}
-                placeholder="Descripción del protocolo..."
+                placeholder="Descripción breve del protocolo..."
               />
+            </div>
+
+            <div>
+              <label htmlFor="docs" className={labelClass}>
+                Documentación completa (para IA)
+              </label>
+              <textarea
+                id="docs"
+                value={formData.docs}
+                onChange={(e) => setFormData({ ...formData, docs: e.target.value })}
+                rows={12}
+                className={inputClass}
+                placeholder="Pega aquí la documentación completa del protocolo (docs, whitepaper, etc.). Se usa para generar el brief y las preguntas por voz en Nomi Echo. Si está vacío, se usará la descripción."
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                Texto largo que Nomi Echo usa para generar el brief y las preguntas. Recomendado para mejor contexto.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -517,7 +542,7 @@ export function ProtocolsListView() {
         <Card className="p-8 text-center">
           <p className="text-zinc-400 mb-2">No hay protocolos creados aún</p>
           <p className="text-sm text-zinc-500">
-            Haz clic en "Agregar Protocolo" para comenzar
+            Haz clic en &quot;Agregar Protocolo&quot; para comenzar
           </p>
         </Card>
       )}

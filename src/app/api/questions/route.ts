@@ -14,8 +14,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      questions,
-      count: questions.length,
+      data: {
+        questions,
+        count: questions.length,
+      },
     })
   } catch (error) {
     console.error('Error fetching questions:', error)
@@ -105,8 +107,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        question,
-        message: 'Question created successfully',
+        data: {
+          question,
+          message: 'Question created successfully',
+        },
       },
       { status: 201 }
     )

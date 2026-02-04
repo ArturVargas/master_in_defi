@@ -63,16 +63,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validar que se respondieron todas las preguntas
-    if (Object.keys(answers).length !== questions.length) {
-      console.error('Not all questions answered:', { answersCount: Object.keys(answers).length, questionsCount: questions.length })
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.NOT_ALL_QUESTIONS_ANSWERED },
-        { status: 400 }
-      )
-    }
-
-    // Calcular score en el servidor
+    // Calcular score en el servidor (preguntas sin respuesta = incorrectas)
     let correctAnswers = 0
     const questionResults: Array<{ questionId: string; isCorrect: boolean }> = []
 
@@ -123,11 +114,13 @@ export async function POST(request: NextRequest) {
 
     // Retornar token y score (sin palabra secreta aún)
     return NextResponse.json({
-      token,
-      score: correctAnswers,
-      total: questions.length,
-      passed: correctAnswers >= QUIZ_CONFIG.MIN_SCORE_TO_PASS,
-      expiresAt
+      data: {
+        token,
+        score: correctAnswers,
+        total: questions.length,
+        passed: correctAnswers >= QUIZ_CONFIG.MIN_SCORE_TO_PASS,
+        expiresAt
+      }
     })
   } catch (error) {
     console.error('Error submitting quiz:', error)

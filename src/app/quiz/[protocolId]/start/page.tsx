@@ -57,7 +57,11 @@ export default function QuizStartPage() {
         if (!response.ok) {
           throw new Error(ERROR_MESSAGES.NETWORK_ERROR)
         }
-        const data = await response.json()
+        const json = await response.json()
+        const data = json.data
+        if (!data?.questions) {
+          throw new Error(ERROR_MESSAGES.NETWORK_ERROR)
+        }
 
         // Mezclar las respuestas de cada pregunta
         const questionsWithShuffledAnswers = data.questions.map((question: SafeQuestion) => ({
@@ -187,11 +191,14 @@ export default function QuizStartPage() {
       })
       
       if (response.ok) {
-        const feedbackData = await response.json()
-        setAnswerFeedback(prev => ({
-          ...prev,
-          [currentQuestion.id]: feedbackData
-        }))
+        const json = await response.json()
+        const feedbackData = json.data
+        if (feedbackData) {
+          setAnswerFeedback(prev => ({
+            ...prev,
+            [currentQuestion.id]: feedbackData
+          }))
+        }
       }
       } catch (error) {
         console.error('Error getting feedback:', error)
@@ -357,9 +364,13 @@ export default function QuizStartPage() {
                       })
                       
                       if (response.ok) {
-                        const data = await response.json()
-                        // Redirigir a resultados con token
-                        router.push(`/quiz/${protocolId}/results?token=${data.token}`)
+                        const json = await response.json()
+                        const data = json.data
+                        if (data?.token) {
+                          router.push(`/quiz/${protocolId}/results?token=${data.token}`)
+                        } else {
+                          handleError(new Error(ERROR_MESSAGES.NETWORK_ERROR))
+                        }
                       } else {
                         handleError(new Error(ERROR_MESSAGES.NETWORK_ERROR))
                       }

@@ -45,12 +45,14 @@ export async function POST(request: NextRequest) {
     // Nota: Las respuestas individuales no tienen explicación en la BD,
     // solo las preguntas tienen explicación
     return NextResponse.json({
-      isCorrect: answer.isCorrect,
-      correctAnswer: correctAnswer ? {
-        id: correctAnswer.id,
-        text: correctAnswer.text
-      } : null,
-      questionExplanation: question.explanation || null
+      data: {
+        isCorrect: answer.isCorrect,
+        correctAnswer: correctAnswer ? {
+          id: correctAnswer.id,
+          text: correctAnswer.text
+        } : null,
+        questionExplanation: question.explanation || null
+      }
     })
   } catch (error) {
     console.error('Error getting feedback:', error)

@@ -6,12 +6,19 @@
  */
 
 import { useRouter } from 'next/navigation'
-import { Protocol } from '@/types/protocol'
 import { MacintoshScene } from './MacintoshScene'
+
+/** Compatible con Protocol (estático) y con protocolos de la API (BD) */
+interface ProtocolForCard {
+  id: string
+  name: string
+  title?: string | null
+  description?: string | null
+}
 
 interface MacintoshProtocolCardProps {
   /** Protocolo a mostrar */
-  protocol: Protocol
+  protocol: ProtocolForCard
   /** Número de preguntas del protocolo */
   questionCount: number
   /** Clase CSS adicional */
@@ -49,7 +56,7 @@ export function MacintoshProtocolCard({
       {/* Información del protocolo integrada */}
       <div className="px-6 py-5 space-y-2">
         <p className="text-sm text-zinc-400 line-clamp-2">
-          {protocol.description}
+          {protocol.description ?? ''}
         </p>
         <div className="flex items-center justify-between pt-2">
           <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">

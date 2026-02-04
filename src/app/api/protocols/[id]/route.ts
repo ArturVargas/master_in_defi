@@ -71,6 +71,7 @@ export async function PUT(
       name: body.name,
       title: body.title,
       description: body.description,
+      docs: body.docs,
       logoUrl: body.logoUrl,
       category: body.category,
       difficulty: body.difficulty,
@@ -84,8 +85,10 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      protocol,
-      message: `Protocol "${id}" updated successfully`,
+      data: {
+        protocol,
+        message: `Protocol "${id}" updated successfully`,
+      },
     })
   } catch (error) {
     const { id } = await params

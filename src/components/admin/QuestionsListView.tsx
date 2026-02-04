@@ -4,7 +4,7 @@
  * Component to display and manage questions with answers
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 
@@ -28,9 +28,23 @@ interface Question {
   answers: Answer[]
 }
 
-export function QuestionsListView() {
+interface ProtocolOption {
+  id: string
+  name: string
+  title?: string | null
+  status?: string
+}
+
+export interface QuestionsListViewProps {
+  adminSecret?: string
+}
+
+export function QuestionsListView(props: QuestionsListViewProps) {
+  const { adminSecret: adminSecretProp = '' } = props
   const [questions, setQuestions] = useState<Question[]>([])
   const [protocols, setProtocols] = useState<string[]>([])
+  const [protocolsForSelect, setProtocolsForSelect] = useState<ProtocolOption[]>([])
+  const [protocolsForSelectLoading, setProtocolsForSelectLoading] = useState(false)
   const [selectedProtocol, setSelectedProtocol] = useState<string>('all')
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -50,27 +64,88 @@ export function QuestionsListView() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
+  const [suggestLoading, setSuggestLoading] = useState(false)
+  const [suggestError, setSuggestError] = useState<string | null>(null)
+  const [suggestedTopics, setSuggestedTopics] = useState<string[]>([])
+
+  const fetchProtocolsForSelect = useCallback(async () => {
+    if (!adminSecretProp) return
+    setProtocolsForSelectLoading(true)
+    try {
+      const response = await fetch('/api/protocols', {
+        headers: { 'x-admin-secret': adminSecretProp },
+      })
+      const json = await response.json()
+      const payload = json.data
+      if (response.ok && payload?.protocols && Array.isArray(payload.protocols)) {
+        setProtocolsForSelect(payload.protocols)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setProtocolsForSelectLoading(false)
+    }
+  }, [adminSecretProp])
 
   useEffect(() => {
     fetchQuestions()
   }, [])
 
+  useEffect(() => {
+    fetchProtocolsForSelect()
+  }, [fetchProtocolsForSelect])
+
+  const handleSuggestQuestion = async (topic?: string) => {
+    if (!formData.protocolId?.trim()) {
+      setSuggestError('Selecciona un protocolo primero')
+      return
+    }
+    setSuggestLoading(true)
+    setSuggestError(null)
+    try {
+      const response = await fetch('/api/nomi/suggest-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          protocolId: formData.protocolId.trim(),
+          ...(topic?.trim() && { topic: topic.trim() }),
+        }),
+      })
+      const json = await response.json()
+      if (!response.ok) {
+        throw new Error(json?.error ?? 'Error al generar sugerencia')
+      }
+      const data = json.data
+      if (data?.question && typeof data.question === 'string') {
+        setFormData((prev) => ({ ...prev, text: data.question.trim() }))
+        setSuggestedTopics(Array.isArray(data.suggestedTopics) ? data.suggestedTopics : [])
+      } else {
+        setSuggestError('La IA no devolvió una pregunta válida')
+      }
+    } catch (err) {
+      setSuggestError(err instanceof Error ? err.message : 'Error de conexión')
+    } finally {
+      setSuggestLoading(false)
+    }
+  }
+
   const fetchQuestions = async () => {
     setLoading(true)
     try {
       const response = await fetch('/api/questions?includeInactive=true')
-      const data = await response.json()
+      const json = await response.json()
 
       if (response.ok) {
-        setQuestions(data.questions)
+        const payload = json.data
+        const questionsList = payload?.questions ?? []
+        setQuestions(questionsList)
 
-        // Extract unique protocols
         const uniqueProtocols = Array.from(
-          new Set(data.questions.map((q: Question) => q.protocolId))
+          new Set(questionsList.map((q: Question) => q.protocolId))
         ) as string[]
         setProtocols(uniqueProtocols)
       } else {
-        console.error('Error fetching questions:', data.error)
+        console.error('Error fetching questions:', json?.error)
       }
     } catch (error) {
       console.error('Error fetching questions:', error)
@@ -123,7 +198,7 @@ export function QuestionsListView() {
         }),
       })
 
-      const data = await response.json()
+      const json = await response.json()
 
       if (response.ok) {
         setMessage(`✓ Pregunta ${editingId ? 'actualizada' : 'creada'} exitosamente`)
@@ -144,7 +219,7 @@ export function QuestionsListView() {
         setEditingId(null)
         fetchQuestions()
       } else {
-        setMessage(`✗ Error: ${data.error || 'Failed to save question'}`)
+        setMessage(`✗ Error: ${json?.error || 'Failed to save question'}`)
       }
     } catch (error) {
       setMessage('✗ Error al crear pregunta')
@@ -275,11 +350,16 @@ export function QuestionsListView() {
                   onChange={(e) => setFormData({ ...formData, protocolId: e.target.value })}
                   className={inputClass}
                   required
+                  disabled={protocolsForSelectLoading}
                 >
-                  <option value="">Selecciona un protocolo</option>
-                  <option value="aave">Aave</option>
-                  <option value="morpho">Morpho</option>
-                  <option value="sablier">Sablier</option>
+                  <option value="">
+                    {protocolsForSelectLoading ? 'Cargando...' : 'Selecciona un protocolo'}
+                  </option>
+                  {protocolsForSelect.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title || p.name} {p.status === 'draft' ? '(draft)' : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -298,18 +378,53 @@ export function QuestionsListView() {
             </div>
 
             <div>
-              <label htmlFor="text" className={labelClass}>
-                Pregunta *
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <label htmlFor="text" className={labelClass + ' mb-0'}>
+                  Pregunta *
+                </label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleSuggestQuestion()}
+                  disabled={suggestLoading || !formData.protocolId?.trim()}
+                >
+                  {suggestLoading ? 'Generando...' : '✨ Sugerir con IA'}
+                </Button>
+              </div>
+              {suggestError && (
+                <p className="text-sm text-amber-400 mb-2">{suggestError}</p>
+              )}
               <textarea
                 id="text"
                 value={formData.text}
-                onChange={(e) => setFormData({ ...formData, text: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, text: e.target.value })
+                  setSuggestError(null)
+                }}
                 rows={3}
                 className={inputClass}
-                placeholder="¿Cuál es la función principal de...?"
+                placeholder="¿Cuál es la función principal de...? O usa «Sugerir con IA» para generar una pregunta a partir de los docs del protocolo."
                 required
               />
+              {suggestedTopics.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-zinc-500 mb-1">Temas para otra pregunta:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedTopics.slice(0, 6).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => handleSuggestQuestion(t)}
+                        disabled={suggestLoading}
+                        className="text-xs px-2 py-1 rounded bg-zinc-700 text-zinc-300 hover:bg-zinc-600 disabled:opacity-50"
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

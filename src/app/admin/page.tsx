@@ -174,8 +174,8 @@ export default function AdminPage() {
 
         {activeTab === 'drops' && <DropsListView />}
         {activeTab === 'codes' && <CodesListView />}
-        {activeTab === 'protocols' && <ProtocolsListView />}
-        {activeTab === 'questions' && <QuestionsListView />}
+        {activeTab === 'protocols' && <ProtocolsListView adminSecret={adminSecret} />}
+        {activeTab === 'questions' && <QuestionsListView adminSecret={adminSecret} />}
       </div>
     </div>
   )

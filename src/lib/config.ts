@@ -42,4 +42,9 @@ export const config = {
   database: {
     url: process.env.DATABASE_URL || '',
   },
+  nomiEcho: {
+    apiUrl: process.env.NOMI_ECHO_API_URL || 'https://nomiecho-production.up.railway.app',
+    /** Timeout en ms para peticiones HTTP (context, voice, agent) */
+    timeoutMs: parseInt(process.env.NOMI_ECHO_TIMEOUT_MS || '60000', 10), // 60s por defecto
+  },
 } as const

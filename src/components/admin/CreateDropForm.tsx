@@ -5,9 +5,16 @@
  * Adaptado del proyecto poap-quiz-app con el estilo dark del proyecto actual
  */
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+
+interface ProtocolOption {
+  id: string
+  name: string
+  title?: string | null
+  status?: string
+}
 
 interface CreateDropFormProps {
   adminSecret: string
@@ -20,6 +27,32 @@ export function CreateDropForm({ adminSecret, onSuccess }: CreateDropFormProps) 
   const startDate = new Date(now.getTime() + 24 * 60 * 60 * 1000) // Tomorrow
   const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // +30 days
   const expiryDate = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000) // +60 days
+
+  const [protocols, setProtocols] = useState<ProtocolOption[]>([])
+  const [protocolsLoading, setProtocolsLoading] = useState(true)
+
+  const fetchProtocols = useCallback(async () => {
+    if (!adminSecret) return
+    setProtocolsLoading(true)
+    try {
+      const response = await fetch('/api/protocols', {
+        headers: { 'x-admin-secret': adminSecret },
+      })
+      const json = await response.json()
+      const payload = json.data
+      if (response.ok && payload?.protocols && Array.isArray(payload.protocols)) {
+        setProtocols(payload.protocols)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setProtocolsLoading(false)
+    }
+  }, [adminSecret])
+
+  useEffect(() => {
+    fetchProtocols()
+  }, [fetchProtocols])
 
   const formatDateTimeLocal = (date: Date) => {
     const year = date.getFullYear()
@@ -141,11 +174,16 @@ export function CreateDropForm({ adminSecret, onSuccess }: CreateDropFormProps) 
             onChange={(e) => setFormData({ ...formData, protocolId: e.target.value })}
             className={inputClass}
             required
+            disabled={protocolsLoading}
           >
-            <option value="">Selecciona un protocolo</option>
-            <option value="aave">Aave</option>
-            <option value="morpho">Morpho</option>
-            <option value="sablier">Sablier</option>
+            <option value="">
+              {protocolsLoading ? 'Cargando...' : 'Selecciona un protocolo'}
+            </option>
+            {protocols.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title || p.name} {p.status === 'draft' ? '(draft)' : ''}
+              </option>
+            ))}
           </select>
           <p className="mt-1 text-xs text-zinc-500">
             Selecciona el protocolo para el cual estás creando este POAP

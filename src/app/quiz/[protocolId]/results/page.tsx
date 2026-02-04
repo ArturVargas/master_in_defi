@@ -52,15 +52,18 @@ export default function QuizResultsPage() {
           return
         }
 
-        const data = await response.json()
-        setResults({
-          score: data.score,
-          total: data.total,
-          passed: data.passed,
-          secretWord: data.secretWord,
-          protocolName: data.protocolName,
-          verificationMethod: data.verificationMethod || null
-        })
+        const json = await response.json()
+        const data = json.data
+        if (data) {
+          setResults({
+            score: data.score,
+            total: data.total,
+            passed: data.passed,
+            secretWord: data.secretWord,
+            protocolName: data.protocolName,
+            verificationMethod: data.verificationMethod || null
+          })
+        }
         setLoading(false)
       } catch (error) {
         console.error('Error loading results:', error)

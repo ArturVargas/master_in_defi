@@ -37,12 +37,14 @@ export async function GET(request: NextRequest) {
     // Retornar resultados (incluyendo palabra secreta si pasó)
     const passed = tokenData.score >= QUIZ_CONFIG.MIN_SCORE_TO_PASS
     return NextResponse.json({
-      score: tokenData.score,
-      total: tokenData.total,
-      passed,
-      secretWord: passed ? (protocol.secretWord || null) : null,
-      protocolName: protocol.title || protocol.name,
-      verificationMethod: tokenData.verificationMethod || null
+      data: {
+        score: tokenData.score,
+        total: tokenData.total,
+        passed,
+        secretWord: passed ? (protocol.secretWord || null) : null,
+        protocolName: protocol.title || protocol.name,
+        verificationMethod: tokenData.verificationMethod || null
+      }
     })
   } catch (error) {
     console.error('Error getting results:', error)

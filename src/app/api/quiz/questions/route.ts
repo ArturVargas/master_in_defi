@@ -51,13 +51,15 @@ export async function GET(request: NextRequest) {
     }))
 
     return NextResponse.json({
-      protocol: {
-        id: protocol.id,
-        name: protocol.name,
-        title: protocol.title
-      },
-      questions: safeQuestions,
-      total: safeQuestions.length
+      data: {
+        protocol: {
+          id: protocol.id,
+          name: protocol.name,
+          title: protocol.title
+        },
+        questions: safeQuestions,
+        total: safeQuestions.length
+      }
     })
   } catch (error) {
     console.error('Error getting questions:', error)

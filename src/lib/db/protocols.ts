@@ -11,6 +11,7 @@ export interface Protocol {
   name: string
   title: string | null
   description: string | null
+  docs: string | null
   logoUrl: string | null
   category: string | null
   difficulty: string | null
@@ -33,6 +34,7 @@ export async function getAllProtocols(): Promise<Protocol[]> {
         name,
         title,
         description,
+        docs,
         logo_url as "logoUrl",
         category,
         difficulty,
@@ -64,6 +66,7 @@ export async function getAllProtocolsAdmin(): Promise<Protocol[]> {
         name,
         title,
         description,
+        docs,
         logo_url as "logoUrl",
         category,
         difficulty,
@@ -94,6 +97,7 @@ export async function getProtocolById(id: string): Promise<Protocol | null> {
         name,
         title,
         description,
+        docs,
         logo_url as "logoUrl",
         category,
         difficulty,
@@ -123,13 +127,14 @@ export async function createProtocol(
   try {
     const result = await sql`
       INSERT INTO protocols (
-        id, name, title, description, logo_url, category,
+        id, name, title, description, docs, logo_url, category,
         difficulty, secret_word, status, active, order_index
       ) VALUES (
         ${protocol.id},
         ${protocol.name},
         ${protocol.title || null},
         ${protocol.description || null},
+        ${protocol.docs || null},
         ${protocol.logoUrl || null},
         ${protocol.category || null},
         ${protocol.difficulty || null},
@@ -143,6 +148,7 @@ export async function createProtocol(
         name,
         title,
         description,
+        docs,
         logo_url as "logoUrl",
         category,
         difficulty,
@@ -174,6 +180,7 @@ export async function updateProtocol(
         name = COALESCE(${updates.name || null}, name),
         title = COALESCE(${updates.title || null}, title),
         description = COALESCE(${updates.description || null}, description),
+        ${updates.docs !== undefined ? sql`docs = ${updates.docs ?? null}` : sql`docs = docs`},
         logo_url = COALESCE(${updates.logoUrl || null}, logo_url),
         category = COALESCE(${updates.category || null}, category),
         difficulty = COALESCE(${updates.difficulty || null}, difficulty),
@@ -188,6 +195,7 @@ export async function updateProtocol(
         name,
         title,
         description,
+        docs,
         logo_url as "logoUrl",
         category,
         difficulty,

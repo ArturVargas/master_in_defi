@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS protocols (
   name VARCHAR(100) NOT NULL,
   title VARCHAR(255),
   description TEXT,
+  docs TEXT,
   logo_url VARCHAR(512),
   category VARCHAR(50),
   difficulty VARCHAR(20),
@@ -52,6 +53,8 @@ CREATE INDEX IF NOT EXISTS idx_protocols_order ON protocols(order_index);
 -- Comments para protocols
 COMMENT ON TABLE protocols IS 'Stores DeFi protocol information';
 COMMENT ON COLUMN protocols.id IS 'Protocol identifier (aave, morpho, sablier)';
+COMMENT ON COLUMN protocols.description IS 'Short summary for cards and listings';
+COMMENT ON COLUMN protocols.docs IS 'Full documentation for Nomi Echo (brief and voice Q&A). Used for context-upload when set.';
 COMMENT ON COLUMN protocols.secret_word IS 'Secret word revealed after passing quiz';
 COMMENT ON COLUMN protocols.status IS 'Protocol visibility: public (visible) or draft (hidden)';
 COMMENT ON COLUMN protocols.order_index IS 'Display order in the UI';

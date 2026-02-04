@@ -33,5 +33,5 @@ export const sablier: Protocol = {
   ],
   secretWord: 'FLOW_STATE_SABLIER',
   poapEventId: 0, // Configurar en .env como POAP_EVENT_ID_SABLIER
-  status: 'draft' // 'public' | 'draft' - Ejemplo de protocolo en borrador
+  status: 'public'
 }
