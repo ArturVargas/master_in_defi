@@ -9,7 +9,7 @@ export const config = {
     appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || 'Master en DeFi',
     backendEndpoint: process.env.NEXT_PUBLIC_SELF_BACKEND_ENDPOINT,
     contractAddress: process.env.NEXT_PUBLIC_VERIFICATION_CONTRACT_ADDRESS,
-    endpointType: (process.env.NEXT_PUBLIC_SELF_ENDPOINT_TYPE || 'celo') as 'celo' | 'base' | 'staging_celo' | 'staging_base',
+    endpointType: (process.env.NEXT_PUBLIC_SELF_ENDPOINT_TYPE || 'staging_https') as 'https' | 'celo' | 'staging_celo' | 'staging_https',
     celoRpcUrl: process.env.NEXT_PUBLIC_CELO_MAINNET_RPC || 'https://celo-sepolia.drpc.org',
     logoUrl: process.env.NEXT_PUBLIC_SELF_LOGO_URL || '',
     deeplinkCallback: typeof window !== 'undefined' ? window.location.href : '',

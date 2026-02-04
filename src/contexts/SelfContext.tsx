@@ -2,8 +2,7 @@
 
 /**
  * Context para Self Protocol
- * Basado en ConnectHub
- * Gestiona el estado de verificación con Self Protocol
+ * Gestiona el estado de verificación con Self Protocol (backend offchain mode)
  */
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
@@ -25,7 +24,7 @@ interface SelfContextType {
   verify: (verificationId: string, method: 'backend' | 'contract', data?: Partial<SelfVerificationData>) => void
   clearVerification: () => void
   initiateSelfVerification: () => Promise<void>
-  checkVerificationStatus: (data?: any) => Promise<void>
+  checkVerificationStatus: () => Promise<void>
 }
 
 const SelfContext = createContext<SelfContextType>({
@@ -48,7 +47,7 @@ export function SelfProvider({ children }: { children: ReactNode }) {
   const connections = useConnections()
   const activeConnection = connections[0]
   const address = activeConnection?.accounts?.[0] as `0x${string}` | undefined
-  
+
   const [verificationData, setVerificationData] = useState<SelfVerificationData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -56,8 +55,9 @@ export function SelfProvider({ children }: { children: ReactNode }) {
   const [universalLink, setUniversalLink] = useState<string | null>(null)
   const [selfApp, setSelfApp] = useState<SelfApp | null>(null)
   const [showWidget, setShowWidget] = useState(false)
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
 
-  // Cargar verificación guardada al iniciar
+  // Load saved verification on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
 
@@ -66,7 +66,6 @@ export function SelfProvider({ children }: { children: ReactNode }) {
       try {
         const data = JSON.parse(saved) as SelfVerificationData
         if (data.verified && data.timestamp) {
-          // Verificar que no haya expirado
           const expirationTime = QUIZ_CONFIG.VERIFICATION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000
           if (Date.now() - data.timestamp < expirationTime) {
             setVerificationData(data)
@@ -75,29 +74,42 @@ export function SelfProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (err) {
-        console.error('Error cargando verificación guardada:', err)
+        console.error('Error loading saved verification:', err)
         localStorage.removeItem(STORAGE_KEYS.SELF_VERIFICATION)
       }
     }
   }, [])
 
-  // Inicializar Self App
+  // Initialize Self App when address changes
   useEffect(() => {
-    if (!address) return
+    if (!address) {
+      setSelfApp(null)
+      setUniversalLink(null)
+      return
+    }
 
     const initSelfApp = async () => {
       try {
         const { SelfAppBuilder, getUniversalLink } = await import('@selfxyz/qrcode')
 
+        const endpoint = config.self.backendEndpoint || `${config.farcaster.siteUrl}/api/verify-self`
+
+        console.log('[SelfContext] Initializing Self App:', {
+          endpoint,
+          endpointType: config.self.endpointType,
+          scope: config.self.scope,
+          userId: address,
+        })
+
         const app = new SelfAppBuilder({
           version: 2,
           appName: config.self.appName,
           scope: config.self.scope,
-          endpoint: config.self.backendEndpoint || '',
+          endpoint,
           deeplinkCallback: config.self.deeplinkCallback,
           logoBase64: config.self.logoUrl,
           userId: address,
-          // Para backend, no especificamos endpointType
+          endpointType: config.self.endpointType,
           userIdType: 'hex',
           disclosures: {
             minimumAge: 18,
@@ -112,13 +124,22 @@ export function SelfProvider({ children }: { children: ReactNode }) {
         setSelfApp(app as SelfApp)
         setUniversalLink(getUniversalLink(app))
       } catch (err) {
-        console.error('Error inicializando Self App:', err)
+        console.error('Error initializing Self App:', err)
         setError('Error inicializando Self Protocol')
       }
     }
 
     initSelfApp()
   }, [address])
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
+      }
+    }
+  }, [pollingInterval])
 
   const verify = useCallback((verificationId: string, method: 'backend' | 'contract', data?: Partial<SelfVerificationData>) => {
     const verification: SelfVerificationData = {
@@ -128,12 +149,11 @@ export function SelfProvider({ children }: { children: ReactNode }) {
       method,
       ...data,
     }
-    
+
     setVerificationData(verification)
     setError(null)
     setIsVerifying(false)
-    
-    // Guardar en localStorage
+
     localStorage.setItem(STORAGE_KEYS.SELF_VERIFICATION, JSON.stringify(verification))
   }, [])
 
@@ -141,102 +161,105 @@ export function SelfProvider({ children }: { children: ReactNode }) {
     setVerificationData(null)
     setError(null)
     setIsVerifying(false)
+    if (pollingInterval) {
+      clearInterval(pollingInterval)
+      setPollingInterval(null)
+    }
     localStorage.removeItem(STORAGE_KEYS.SELF_VERIFICATION)
-  }, [])
+  }, [pollingInterval])
 
+  // Poll /api/verify-self/check to detect verification completion
+  const checkVerificationStatus = useCallback(async () => {
+    if (!address) return
+
+    try {
+      const response = await fetch('/api/verify-self/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: address })
+      })
+
+      const data = await response.json()
+
+      if (data.verified) {
+        verify(`backend_${Date.now()}`, 'backend', {
+          date_of_birth: data.date_of_birth,
+          name: data.name,
+          nationality: data.nationality,
+        })
+
+        // Stop polling
+        if (pollingInterval) {
+          clearInterval(pollingInterval)
+          setPollingInterval(null)
+        }
+      }
+    } catch (err) {
+      console.error('Error checking verification status:', err)
+    }
+  }, [address, verify, pollingInterval])
+
+  // Open Self app (deeplink or browser) and start polling
   const initiateSelfVerification = useCallback(async () => {
-    if (!universalLink) {
-      setError('Universal link no disponible')
+    if (!universalLink || !address) {
+      setError('Self Protocol no inicializado')
       return
     }
 
     setIsVerifying(true)
     setError(null)
 
+    // Clear any existing polling
+    if (pollingInterval) {
+      clearInterval(pollingInterval)
+      setPollingInterval(null)
+    }
+
     try {
-      // Intentar abrir en Farcaster si está disponible
+      // Try Farcaster SDK first
       try {
         const { sdk } = await import('@farcaster/miniapp-sdk')
         const isInMiniAppResult = await sdk.isInMiniApp()
-        
+
         if (isInMiniAppResult) {
           await sdk.actions.openUrl(universalLink)
-          return
+          console.log('[SelfContext] Opened Self app via Farcaster SDK')
+        } else {
+          window.open(universalLink, '_blank')
+          console.log('[SelfContext] Opened Self app in browser')
         }
       } catch {
-        // No está en Farcaster, continuar con window.open
+        window.open(universalLink, '_blank')
+        console.log('[SelfContext] Opened Self app in browser (fallback)')
       }
 
-      // Abrir en nueva ventana/pestaña
-      window.open(universalLink, '_blank')
+      // Start polling for verification result
+      let pollAttempts = 0
+      const maxPollAttempts = 60 // 5 minutes (60 * 5s)
+
+      const interval = setInterval(async () => {
+        pollAttempts++
+
+        if (pollAttempts > maxPollAttempts) {
+          clearInterval(interval)
+          setPollingInterval(null)
+          setIsVerifying(false)
+          setError('Timeout: La verificación está tomando más tiempo del esperado')
+          console.log('[SelfContext] Polling timeout after', pollAttempts, 'attempts')
+          return
+        }
+
+        await checkVerificationStatus()
+      }, 5000)
+
+      setPollingInterval(interval)
+
     } catch (err) {
-      console.error('Error abriendo Self app:', err)
+      console.error('Error opening Self app:', err)
       setError('Error al abrir Self Protocol')
       setIsVerifying(false)
     }
-  }, [universalLink])
-
-  const checkVerificationStatus = useCallback(async (data?: any) => {
-    if (!address) return
-
-    const backendEndpoint = config.self.backendEndpoint
-    if (!backendEndpoint) {
-      setError('Backend endpoint no configurado')
-      return
-    }
-
-    setIsVerifying(true)
-    setError(null)
-
-    try {
-      // Polling para verificar estado en backend
-      const maxAttempts = 60 // 5 minutos
-      let attempts = 0
-
-      const pollStatus = async (): Promise<void> => {
-        attempts++
-        
-        try {
-          const response = await fetch(`${backendEndpoint}?address=${address}`)
-          
-          if (response.ok) {
-            const result = await response.json()
-            
-            if (result.verified) {
-              verify(result.verificationId || `backend_${Date.now()}`, 'backend', {
-                date_of_birth: result.date_of_birth,
-                name: result.name,
-                nationality: result.nationality,
-              })
-              setIsVerifying(false)
-              return
-            }
-          }
-
-          if (attempts < maxAttempts) {
-            setTimeout(pollStatus, 5000) // Poll cada 5 segundos
-          } else {
-            setError('Timeout: La verificación está tomando más tiempo del esperado')
-            setIsVerifying(false)
-          }
-        } catch (err) {
-          console.error('Error verificando estado:', err)
-          if (attempts < maxAttempts) {
-            setTimeout(pollStatus, 5000)
-          } else {
-            setError('Error al verificar estado de verificación')
-            setIsVerifying(false)
-          }
-        }
-      }
-
-      pollStatus()
-    } catch (err) {
-      console.error('Error en checkVerificationStatus:', err)
-      setError('Error al verificar estado')
-      setIsVerifying(false)
-    }
-  }, [address, verify])
+  }, [universalLink, address, checkVerificationStatus, pollingInterval])
 
   return (
     <SelfContext.Provider
